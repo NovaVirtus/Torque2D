@@ -43,6 +43,8 @@
 #include "2d/core/Utility.h"
 #endif
 
+
+#include <sstream>
 //-----------------------------------------------------------------------------
 
 class SceneWindow : public GuiControl, public virtual Tickable
@@ -183,6 +185,7 @@ public:
     /// Mouse.
     void setLockMouse( bool lockStatus ) { mLockMouse = lockStatus; };
     bool getLockMouse( void ) { return mLockMouse; };
+	Vector2 getMouseGUIPosition(void); //*NCP
     Vector2 getMousePosition( void );
     void setMousePosition( const Vector2& mousePosition );
 
@@ -210,6 +213,8 @@ public:
     /// Coordinate Conversion.
     void windowToScenePoint( const Vector2& srcPoint, Vector2& dstPoint ) const;
     void sceneToWindowPoint( const Vector2& srcPoint, Vector2& dstPoint ) const;
+	// *NCP
+	void getWindowCenter(F32 &x, F32 &y);
 
     /// Mounting.
     void mount( SceneObject* pSceneObject, const Vector2& mountOffset, const F32 mountForce, const bool sendToMount, const bool mountAngle );

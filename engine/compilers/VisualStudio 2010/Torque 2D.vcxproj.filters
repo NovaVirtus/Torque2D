@@ -70,9 +70,6 @@
     <Filter Include="debug\remote">
       <UniqueIdentifier>{d55ba677-1863-4206-92b7-1df94c48df84}</UniqueIdentifier>
     </Filter>
-    <Filter Include="delegates">
-      <UniqueIdentifier>{d016b107-aefd-41ac-a04c-6b75caaf114d}</UniqueIdentifier>
-    </Filter>
     <Filter Include="game">
       <UniqueIdentifier>{d48f2bd5-39e5-4fdb-8472-79839fcd7e21}</UniqueIdentifier>
     </Filter>
@@ -177,6 +174,21 @@
     </Filter>
     <Filter Include="2d\experimental\composites">
       <UniqueIdentifier>{b250a30d-b6a9-48b5-9193-2b9bedf765ee}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="survival">
+      <UniqueIdentifier>{de5449b8-17c3-43b2-a4c0-4ead9fe61606}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="delegates">
+      <UniqueIdentifier>{d016b107-aefd-41ac-a04c-6b75caaf114d}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="survival\tiles">
+      <UniqueIdentifier>{b3811928-f6dc-4a7e-9f96-f9c1f4da26e4}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="survival\turn">
+      <UniqueIdentifier>{da297e88-24d7-4cb3-aa61-ea6e19110048}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="survival\actors">
+      <UniqueIdentifier>{d4c0f119-8a9a-4bcf-9855-c2be6f8a7949}</UniqueIdentifier>
     </Filter>
   </ItemGroup>
   <ItemGroup>
@@ -1304,6 +1316,15 @@
     </ClCompile>
     <ClCompile Include="..\..\source\2d\core\ImageFrameProviderCore.cc">
       <Filter>2d\core</Filter>
+    </ClCompile>
+    <ClCompile Include="TileGrid.cpp">
+      <Filter>survival\tiles</Filter>
+    </ClCompile>
+    <ClCompile Include="Tile.cpp">
+      <Filter>survival\tiles</Filter>
+    </ClCompile>
+    <ClCompile Include="Actor.cpp">
+      <Filter>survival\actors</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
@@ -2675,6 +2696,15 @@
     </ClInclude>
     <ClInclude Include="..\..\source\2d\core\ImageFrameProviderCore.h">
       <Filter>2d\core</Filter>
+    </ClInclude>
+    <ClInclude Include="TileGrid.h">
+      <Filter>survival\tiles</Filter>
+    </ClInclude>
+    <ClInclude Include="Tile.h">
+      <Filter>survival\tiles</Filter>
+    </ClInclude>
+    <ClInclude Include="Actor.h">
+      <Filter>survival\actors</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

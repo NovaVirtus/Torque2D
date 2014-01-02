@@ -1573,7 +1573,7 @@ void SceneObject::onEndCollision( const TickContact& tickContact )
 
 //-----------------------------------------------------------------------------
 
-bool SceneObject::moveTo( const Vector2& targetWorldPoint, const F32 speed, const bool autoStop, const bool warpToTarget )
+bool SceneObject::moveTo( const Vector2& targetWorldPoint, const F32 speed, const bool autoStop, const bool warpToTarget, const F32 yScaling )
 {
     // Check in a scene.
     if ( !getScene() )
@@ -1605,17 +1605,37 @@ bool SceneObject::moveTo( const Vector2& targetWorldPoint, const F32 speed, cons
 
     // Calculate the linear velocity for the specified speed.
     Vector2 linearVelocity = targetWorldPoint - getPosition();
-    const F32 distance = linearVelocity.Normalize( speed );
+	
+	if(yScaling == 1) {
+		const F32 distance = linearVelocity.Normalize( speed );
 
-    // Calculate the time it will take to reach the target.
-    const U32 time = (U32)((distance / speed) * 1000.0f);
+		// Calculate the time it will take to reach the target.
+		const U32 time = (U32)((distance / speed) * 1000.0f);
 
-    // Set the linear velocity.
-    setLinearVelocity( linearVelocity );
+		// Set the linear velocity.
+		setLinearVelocity( linearVelocity );
 
-    // Create and post event.
-    SceneObjectMoveToEvent* pEvent = new SceneObjectMoveToEvent( targetWorldPoint, autoStop, warpToTarget );
-    mMoveToEventId = Sim::postEvent(this, pEvent, Sim::getCurrentTime() + time );
+		// Create and post event.
+		SceneObjectMoveToEvent* pEvent = new SceneObjectMoveToEvent( targetWorldPoint, autoStop, warpToTarget );
+		mMoveToEventId = Sim::postEvent(this, pEvent, Sim::getCurrentTime() + time );
+	} else { //*NCP 1/2014
+		std::stringstream ss;
+		ss << "Scaling by: " << yScaling;
+		Con::printf(ss.str().c_str());
+		linearVelocity.y /= yScaling;
+		const F32 distance = linearVelocity.Normalize( speed );
+
+		// Calculate the time it will take to reach the target.
+		const U32 time = (U32)((distance / speed) * 1000.0f);
+
+		// Set the linear velocity.
+		linearVelocity.y *= yScaling;
+		setLinearVelocity( linearVelocity );
+
+		// Create and post event.
+		SceneObjectMoveToEvent* pEvent = new SceneObjectMoveToEvent( targetWorldPoint, autoStop, warpToTarget );
+		mMoveToEventId = Sim::postEvent(this, pEvent, Sim::getCurrentTime() + time );
+	}
 
     return true;
 }

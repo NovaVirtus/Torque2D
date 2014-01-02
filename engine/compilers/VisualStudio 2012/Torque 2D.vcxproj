@@ -458,6 +458,9 @@
     <ClCompile Include="..\..\source\network\serverQuery.cc" />
     <ClCompile Include="..\..\source\network\tcpObject.cc" />
     <ClCompile Include="..\..\source\network\telnetConsole.cc" />
+    <ClCompile Include="..\..\source\nova\actors\Actor.cpp" />
+    <ClCompile Include="..\..\source\nova\tiles\Tile.cpp" />
+    <ClCompile Include="..\..\source\nova\tiles\TileGrid.cpp" />
     <ClCompile Include="..\..\source\persistence\taml\taml.cc" />
     <ClCompile Include="..\..\source\persistence\taml\tamlBinaryReader.cc" />
     <ClCompile Include="..\..\source\persistence\taml\tamlBinaryWriter.cc" />
@@ -903,6 +906,12 @@
     <ClInclude Include="..\..\source\network\serverQuery.h" />
     <ClInclude Include="..\..\source\network\tcpObject.h" />
     <ClInclude Include="..\..\source\network\telnetConsole.h" />
+    <ClInclude Include="..\..\source\nova\actors\Actor.h" />
+    <ClInclude Include="..\..\source\nova\actors\ActorArrivedEvent.h" />
+    <ClInclude Include="..\..\source\nova\actors\ActorContinuedMovementCheckEvent.h" />
+    <ClInclude Include="..\..\source\nova\actors\ActorEnteredTileEvent.h" />
+    <ClInclude Include="..\..\source\nova\tiles\Tile.h" />
+    <ClInclude Include="..\..\source\nova\tiles\TileGrid.h" />
     <ClInclude Include="..\..\source\persistence\taml\taml.h" />
     <ClInclude Include="..\..\source\persistence\taml\tamlBinaryReader.h" />
     <ClInclude Include="..\..\source\persistence\taml\tamlBinaryWriter.h" />

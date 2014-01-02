@@ -607,6 +607,9 @@
     <ClCompile Include="..\..\source\testing\tests\platformMemoryTests.cc" />
     <ClCompile Include="..\..\source\testing\tests\platformStringTests.cc" />
     <ClCompile Include="..\..\source\testing\unitTesting.cc" />
+    <ClCompile Include="Actor.cpp" />
+    <ClCompile Include="Tile.cpp" />
+    <ClCompile Include="TileGrid.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\..\source\2d\assets\AnimationAsset.h" />
@@ -1066,6 +1069,9 @@
     <ClInclude Include="..\..\source\gui\editor\guiSeparatorCtrl.h" />
     <ClInclude Include="..\..\source\testing\unitTesting.h" />
     <ClInclude Include="..\..\source\torqueConfig.h" />
+    <ClInclude Include="Actor.h" />
+    <ClInclude Include="Tile.h" />
+    <ClInclude Include="TileGrid.h" />
   </ItemGroup>
   <ItemGroup>
     <CustomBuild Include="..\..\source\math\mMath_ASM.asm">

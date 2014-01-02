@@ -178,6 +178,15 @@
     <Filter Include="2d\experimental\composites">
       <UniqueIdentifier>{30e1ec13-118b-4d50-8e04-76e76fcfdc01}</UniqueIdentifier>
     </Filter>
+    <Filter Include="nova">
+      <UniqueIdentifier>{faafb2d1-8588-4025-8d8f-c25406962bd8}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="nova\actors">
+      <UniqueIdentifier>{a854a36f-793e-4527-bc72-bf37dc6ff1e0}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="nova\tiles">
+      <UniqueIdentifier>{7e317bc4-c3bc-4c00-82b9-81e99be1a30c}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\..\source\audio\audio.cc">
@@ -1304,6 +1313,15 @@
     </ClCompile>
     <ClCompile Include="..\..\source\2d\core\ImageFrameProviderCore.cc">
       <Filter>2d\core</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\source\nova\actors\Actor.cpp">
+      <Filter>nova\actors</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\source\nova\tiles\Tile.cpp">
+      <Filter>nova\tiles</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\source\nova\tiles\TileGrid.cpp">
+      <Filter>nova\tiles</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
@@ -2672,6 +2690,24 @@
     </ClInclude>
     <ClInclude Include="..\..\source\2d\core\ImageFrameProviderCore.h">
       <Filter>2d\core</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\source\nova\actors\Actor.h">
+      <Filter>nova\actors</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\source\nova\tiles\Tile.h">
+      <Filter>nova\tiles</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\source\nova\tiles\TileGrid.h">
+      <Filter>nova\tiles</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\source\nova\actors\ActorArrivedEvent.h">
+      <Filter>nova\actors</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\source\nova\actors\ActorEnteredTileEvent.h">
+      <Filter>nova\actors</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\source\nova\actors\ActorContinuedMovementCheckEvent.h">
+      <Filter>nova\actors</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

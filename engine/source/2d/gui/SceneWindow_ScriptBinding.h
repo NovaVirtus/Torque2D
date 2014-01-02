@@ -1257,6 +1257,25 @@ ConsoleMethod(SceneWindow, getMousePosition, const char*, 2, 2, "() Gets Current
 
 //-----------------------------------------------------------------------------
 
+ConsoleMethod(SceneWindow, getMouseGUIPosition, const char*, 2, 2, "() Gets Current Mouse Position."
+              "@return Returns a string with the current mouse cursor coordinates formatted as \"x y\"")
+{
+    // Fetch Mouse Position.
+    Vector2 worldMousePoint = object->getMouseGUIPosition();
+
+    // Create Returnable Buffer.
+    char* pBuffer = Con::getReturnBuffer(32);
+
+    // Generate Script Parameters.
+    dSprintf(pBuffer, 32, "%g %g", worldMousePoint.x, worldMousePoint.y);
+
+    // Return Buffer.
+    return pBuffer;
+}
+
+
+//-----------------------------------------------------------------------------
+
 ConsoleMethod(SceneWindow, getWorldPoint, const char*, 3, 4, "(X / Y) - Returns World coordinate of Window coordinate."
               "@param x,y The coordinates in window coordinates you wish to convert to world coordinates. Accepts either (x,y) or (\"x y\")"
               "@return Returns the desired world coordinates as a string formatted as \"x y\"")

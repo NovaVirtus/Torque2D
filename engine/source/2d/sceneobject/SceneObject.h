@@ -388,7 +388,7 @@ public:
     inline F32              getAngularDamping(void) const               { if ( mpScene ) return mpBody->GetAngularDamping(); else return mBodyDefinition.angularDamping; }
 
     /// Move/Rotate to.
-    bool                    moveTo( const Vector2& targetWorldPoint, const F32 speed, const bool autoStop = true, const bool warpToTarget = true );
+    bool                    moveTo( const Vector2& targetWorldPoint, const F32 speed, const bool autoStop = true, const bool warpToTarget = true,  const F32 yScaling = 1 );
     bool                    rotateTo( const F32 targetAngle, const F32 speed, const bool autoStop = true, const bool warpToTarget = true );
     void                    cancelMoveTo( const bool autoStop = true );
     void                    cancelRotateTo( const bool autoStop = true );

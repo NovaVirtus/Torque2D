@@ -888,6 +888,23 @@ void SceneWindow::setMousePosition( const Vector2& mousePosition )
 }
 
 //-----------------------------------------------------------------------------
+Vector2 SceneWindow::getMouseGUIPosition(void) {
+    // Calculate Current Camera View.
+    calculateCameraView(&mCameraCurrent);
+
+    // Fetch Canvas.
+    GuiCanvas* pCanvas = getRoot();
+
+    // World Mouse Position.
+    Vector2 worldMousePoint(0, 0);
+
+    // Canvas available?
+	if (pCanvas) {
+        // Yes, so fetch local GUI coordinates.
+        worldMousePoint = globalToLocalCoord( pCanvas->getCursorPos() );
+	}
+	return worldMousePoint;
+}
 
 Vector2 SceneWindow::getMousePosition( void )
 {
@@ -935,6 +952,18 @@ void SceneWindow::windowToScenePoint( const Vector2& srcPoint, Vector2& dstPoint
 {
     // Return Conversion.
     dstPoint.Set( (srcPoint.x * mCameraCurrent.mSceneWindowScale.x) + mCameraCurrent.mSceneMin.x, mCameraCurrent.mSceneMax.y - (srcPoint.y * mCameraCurrent.mSceneWindowScale.y) );
+}
+
+// *NCP
+void SceneWindow::getWindowCenter(F32 &x, F32 &y) {
+	//std::stringstream ss;
+	//ss.str("");
+
+	//ss << "Window center = " << mCameraCurrent.mSceneMin.x << ":" << mCameraCurrent.mSceneMax.x << ", " << mCameraCurrent.mSceneMin.y << ":" << mCameraCurrent.mSceneMax.y;
+	x = ((mCameraCurrent.mSceneMax.x - mCameraCurrent.mSceneMin.x) / 2) + mCameraCurrent.mSceneMin.x;
+	y = ((mCameraCurrent.mSceneMax.y - mCameraCurrent.mSceneMin.y) / 2) + mCameraCurrent.mSceneMin.y;
+	//ss << " -> Center = " << x << ", " << y;
+	//Con::printf(ss.str().c_str());
 }
 
 //-----------------------------------------------------------------------------
