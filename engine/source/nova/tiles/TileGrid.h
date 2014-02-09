@@ -8,9 +8,18 @@
 #ifndef _TILE_GRID_H_
 #define _TILE_GRID_H_
 
-
 #include <string>
 #include <sstream>
+#include "../actors/ActionPlan.h"
+
+using namespace std;
+
+struct TileDistanceCompare {
+	bool operator()(Tile* t1, Tile* t2) const {
+		//return (t1->lastKnownCost) < (t2->lastKnownCost);
+		return (t1->mCostFuture) > (t2->mCostFuture); // Backwards: Want to go from lowest (Distance) to highest
+	};
+};
 
 class TileGrid : public SimObject  
     {  
@@ -19,90 +28,181 @@ class TileGrid : public SimObject
       
 			bool mDisplayed;
 			
-			int mNumDisplayedTilesFromCenterX;
-			int mNumDisplayedTilesFromCenterY;
+			U32 mNumDisplayedTilesFromCenterX;
+			U32 mNumDisplayedTilesFromCenterY;
 
-			int mMinDisplayedX;
-			int mMinDisplayedY;
+			U32 mMinDisplayedX;
+			U32 mMinDisplayedY;
 
-
-
-			int mMaxDisplayedX;
-			int mMaxDisplayedY;
+			U32 mMaxDisplayedX;
+			U32 mMaxDisplayedY;
 		
-			inline void removeRow(const int y, const int minCol, const int maxCol) {
-				for(int x=minCol; x <= maxCol; x++) mTiles[index(x,y)].removeFromSpriteBatch(mCompositeSprite);
-			}
-			inline void removeColumn(const int x, const int minRow, const int maxRow) {
-				for(int y=minRow; y <= maxRow; y++) mTiles[index(x,y)].removeFromSpriteBatch(mCompositeSprite);
-			}
-			inline void addRow(const int y, const int minCol, const int maxCol) {
-				for(int x=minCol; x <= maxCol; x++) mTiles[index(x,y)].addToSpriteBatch(mCompositeSprite);
-			}
-			inline void addColumn(const int x, const int minRow, const int maxRow) {
-				for(int y=minRow; y <= maxRow; y++) {
-					//std::stringstream ss;
-					//Vector2 newVector = mTiles[index(x,y)].mLogicalPosition->getAsVector2();
-					//ss << "Adding column " << x << " Row " << y << " out of " << minRow << "/" << maxRow << "; log pos = " << newVector.x << "," << newVector.y;
-					//Con::printf(ss.str().c_str());	
-					mTiles[index(x,y)].addToSpriteBatch(mCompositeSprite);
-
+			inline U32 constrainU32ToRange(U32 number, S32 offsetValue, U32 min, U32 max) {
+				U32 working;
+				if(offsetValue >= 0) {
+					working = number + offsetValue;
+					if(working < number) return max;
+					return (working > max ? max : working);
+				} else {
+					if((U32)(-1 * offsetValue) > number) return min;
+					working = number + offsetValue;
+					return (working < min ? min : working);
 				}
+			}
+
+			inline void removeRow(const U32 y, const U32 minCol, const U32 maxCol) {
+				for(U32 x=minCol; x <= maxCol; x++) mTiles[index(x,y)].removeFromSpriteBatch(mCompositeSprite);
+			}
+			inline void removeColumn(const U32 x, const U32 minRow, const U32 maxRow) {
+				for(U32 y=minRow; y <= maxRow; y++) mTiles[index(x,y)].removeFromSpriteBatch(mCompositeSprite);
+			}
+			inline void addRow(const U32 y, const U32 minCol, const U32 maxCol) {
+				for(U32 x=minCol; x <= maxCol; x++) mTiles[index(x,y)].addToSpriteBatch(mCompositeSprite);
+			}
+			inline void addColumn(const U32 x, const U32 minRow, const U32 maxRow) {
+				for(U32 y=minRow; y <= maxRow; y++) mTiles[index(x,y)].addToSpriteBatch(mCompositeSprite);
 			}
 		
 	protected:
 
     public:  
-		int mCenterX;
-		int mCenterY;
+		//void TileGrid::tryAStarAddNeighbor(priority_queue<Tile*, vector<Tile*>, TileDistanceCompare> openSet, Tile* from, Tile* goal, Tile* t);
+		inline bool TryToAddNeighbor(Tile* from, S32 offsetX, S32 offsetY, F32 curCostPast, Tile* goal, Tile* & to, F32 fixedCost) {
+			if(!isValidLocation(from->mLogicalX + offsetX, from->mLogicalY + offsetY)) return false;
+			to = &mTiles[index(from->mLogicalX + offsetX, from->mLogicalY + offsetY)];
+			F32 tentativeScore = curCostPast + from->actualDistance(to, fixedCost);
+			if(tentativeScore < to->mCostPast) {
+				to->mCameFrom = from;
+				to->mCostPast = tentativeScore;
+				to->mCostFuture = tentativeScore + to->estimatedDistance(goal);
+				return true;
+			}
+			return false;
+		}
+		//void tryAStarAddNeighbor(Tile* from, Tile* goal, Tile* t);
+		void tryDijkstras();
+		void tryAStar(Tile* origin, Tile* goal);
 		
-		float mStrideX, mStrideY;
+		U32 mCenterX, mCenterY;
+		U32 mSizeX, mSizeY;
+		F32 mStrideX, mStrideY;
+		F32 mSpriteOffsetX, mSpriteOffsetY;
 
-		F32 mSpriteOffsetX;
-		F32 mSpriteOffsetY;
-
+		CompositeSprite* mCompositeSprite;
 		SceneWindow* mSceneWindow;
+		Tile* mTiles;
+
+		TileGrid();
+		TileGrid(const U32 x, const U32 y);
+		~TileGrid(); 
+		
+		void resizeGrid(const U32 x, const U32 y);
+		void setDisplayableSize(const U32 x, const U32 y);
+		void setDisplayCenter(const U32 x, const U32 y);
+		void setDisplayed(bool displayed);
+		void setTile(const U32 x, const U32 y, const char* tileAssetID, const U32 frame, const char* logicalPositionArgs);
+        void spinTile(const U32 x, const U32 y);
+		void updateTile(const U32 x, const U32 y, const char* tileAssetID, const U32 frame);
 		void updateWindowCenter();
 
-		Tile* mTiles;
-		CompositeSprite* mCompositeSprite;
-		inline int index(const int x, const int y) { return (y*mSizeX)+x; }
-		
-		inline bool isValidLocation(const int x, const int y) { return ((x >= 0) && (y >= 0) && (x < mSizeX) && (y < mSizeY) && ((x*y) <= maxIndex())); }
-		//inline bool isValidLocation(const int x, const int y) { return ((x > 0) && (y > 0) && (x <= mSizeX) && (y <= mSizeY) && ((x*y) <= maxIndex())); }
-		//inline bool isValidLocation(const int x, const int y) { return ((x > 0) && (y > 0) && (x < mSizeX) && (y < mSizeY)); }
-
-		inline int maxIndex() { return (mSizeX * mSizeY) - 1; }
-		int mSizeX, mSizeY;
-		TileGrid();
-		void resizeGrid(const int x, const int y);
-        TileGrid(const int x, const int y);
-		void setTile(const int x, const int y, const char* tileAssetID, const U32 frame, const char* logicalPositionArgs);
-		void updateTile(const int x, const int y, const char* tileAssetID, const U32 frame);
-		void spinTile(const int x, const int y);
-		inline void setDefaultSpriteStride( const Vector2& defaultStride ) { 
-			mStrideX = defaultStride.x; mStrideY = defaultStride.y; if(mCompositeSprite) mCompositeSprite->setDefaultSpriteStride(defaultStride); }
-		// Returns true if valid coordinates
-		
-		Tile* getTile(const int x, const int y);
-
-		bool getLogicalCoordinates(const F32 worldX, const F32 worldY, int& logicalX, int& logicalY, bool constrainWithinGrid);
-
-		void setDisplayableSize(const int x, const int y);
-		void setDisplayCenter(const int x, const int y);
-		void setDisplayed(bool displayed);
-        ~TileGrid(); 
         virtual bool onAdd();  
         virtual void onRemove();  
-          
         virtual void copyTo(SimObject* object);  
-          
-        static void initPersistFields();  
-          
+
+		static void initPersistFields();  
+
+		bool getLogicalCoordinates(const F32 worldX, const F32 worldY, U32& logicalX, U32& logicalY, bool constrainWithinGrid);
+		bool getRelativeMove(const U32 fromX, const U32 fromY, const S32 offsetX, const S32 offsetY, U32& toX, U32& toY);
+
+        Tile* getTile(const U32 x, const U32 y); 
+		
+		inline U32 index(const U32 x, const U32 y) { return (y * mSizeX) + x; }
+		inline U32 maxIndex() { return (mSizeX * mSizeY) - 1; }
+
+		inline bool isValidLocation(const U32 x, const U32 y) { return ((x >= 0) && (y >= 0) && (x < mSizeX) && (y < mSizeY) && ((x * y) <= maxIndex())); }
+
+		inline void getTileCenter(const U32 logicalX, const U32 logicalY, F32& worldX, F32& worldY) {
+			worldX = (F32)((logicalX + logicalY) * mStrideX);
+			worldY = (F32)(((S32)logicalY - (S32)logicalX + 0.5) * mStrideY);
+		}
+
+		inline void setDefaultSpriteStride( const Vector2& defaultStride ) { 
+			mStrideX = defaultStride.x; 
+			mStrideY = defaultStride.y; 
+			if(mCompositeSprite) mCompositeSprite->setDefaultSpriteStride(defaultStride); 
+		}
+
+		inline ActionPlan* recurrentPrependStep(const U32 fromX, const U32 fromY, const U32 toX, const U32 toY) {
+			if(fromX == toX && fromY == toY) return 0;
+			
+			U32 newX, newY;
+			U32 differenceX = fromX - toX;
+			U32 differenceY = fromY - toY;
+
+			if(differenceX > 1) differenceX = 1;
+			if(differenceY > 1) differenceY = 1;
+			if(differenceX < -1) differenceX = -1;
+			if(differenceY < -1) differenceY = -1;
+
+			newX = toX - differenceX;
+			newY = toY - differenceY;
+			ActionPlan* head = new ActionPlan(newX, newY);
+			//ActionPlan* head = new ActionPlan(recurrentPrependStep(fromX, fromY, newX, newY), newX, newY);
+			return head;
+		}
+
+		inline void debugSpecifiedActionPlan(ActionPlan* current) {
+			std::stringstream ss;
+			ss << "Action plan = ";
+			for( ; current != 0; current = current->nextStep) {
+				Tile* t = getTile(current->x, current->y);
+				Vector2* position = t->mCenter;
+				ss << "<Logical" << current->x << "," << current->y << " -> World" << position->x << "," << position->y << "> ";
+			}
+			Con::printf(ss.str().c_str());
+		}
+
+
+		inline ActionPlan* getPathToTarget(const U32 fromX, const U32 fromY, const U32 toX, const U32 toY) {
+			if(!isValidLocation(toX, toY)) return 0;
+			tryAStar(&mTiles[index(fromX, fromY)], &mTiles[index(toX, toY)]);
+			std::stringstream ss;
+			ss << "Just ran AStar...";
+			Con::printf(ss.str().c_str());
+			// = new ActionPlan(toX, toY);
+			ActionPlan* next = new ActionPlan(toX, toY);
+			ActionPlan* head = next;
+
+			Tile* t = mTiles[index(toX, toY)].mCameFrom;
+			while(t != 0) {
+				if(t->mLogicalX == fromX && t->mLogicalY == fromY) break;
+				head = new ActionPlan(head, t->mLogicalX, t->mLogicalY);
+				t = t->mCameFrom;
+			}
+			/*
+			Tile* t = mTiles[index(toX, toY)].mCameFrom;
+			std::stringstream ss1;
+			ss1 << "GPTT ending tile: " << t->mLogicalX << "," << t->mLogicalY;
+			Con::printf(ss1.str().c_str());
+			while(t != 0) {
+				std::stringstream ss2;
+				ss2 << "GTPP next tile: " << t->mLogicalX << "," << t->mLogicalY << " vs " << fromX << "," << fromY;
+				Con::printf(ss2.str().c_str());
+				//if((t->mLogicalX == fromX) && (t->mLogicalY == fromY)) break;
+				if(!(t->mLogicalX == fromX) && (t->mLogicalY == fromY)) {
+					head = new ActionPlan(next, t->mLogicalX, t->mLogicalY);
+					next = head;
+				}
+				t = t->mCameFrom;
+			}*/
+			debugSpecifiedActionPlan(head);
+			return head;
+		}
+
         DECLARE_CONOBJECT( TileGrid );  
     };  
 
-ConsoleMethod(TileGrid, setWindowSize, void, 4, 4, "(float sizeX, [float sizeY]]) - Sets the number of tiles loaded into the composite sprite at one time.\n"
+ConsoleMethod(TileGrid, setWindowSize, void, 4, 4, "(F32 sizeX, [F32 sizeY]]) - Sets the number of tiles loaded into the composite sprite at one time.\n"
 																	"@param sizeX The number of tiles per row to load.\n"
 																	"@param sizeY The number of tiles per column to load.\n"
 																	"@return No return value.") {
@@ -111,7 +211,7 @@ ConsoleMethod(TileGrid, setWindowSize, void, 4, 4, "(float sizeX, [float sizeY]]
 
 }
 
-ConsoleMethod(TileGrid, setWindowCenter, void, 4, 4, "(float sizeX, [float sizeY]]) - Sets the center of the batch of tiles loaded into the composite sprite at one time.\n"
+ConsoleMethod(TileGrid, setWindowCenter, void, 4, 4, "(F32 sizeX, [F32 sizeY]]) - Sets the center of the batch of tiles loaded into the composite sprite at one time.\n"
 																	"@param sizeX The number of tiles per row to load.\n"
 																	"@param sizeY The number of tiles per column to load.\n"
 																	"@return No return value.") {
@@ -120,7 +220,7 @@ ConsoleMethod(TileGrid, setWindowCenter, void, 4, 4, "(float sizeX, [float sizeY
 
 }
 
-ConsoleMethod(TileGrid, setSpriteOffset, void, 4, 4, "(float sizeX, [float sizeY]]) - Sets the center of the batch of tiles loaded into the composite sprite at one time.\n"
+ConsoleMethod(TileGrid, setSpriteOffset, void, 4, 4, "(F32 sizeX, [F32 sizeY]]) - Sets the center of the batch of tiles loaded into the composite sprite at one time.\n"
 																	"@param sizeX The number of tiles per row to load.\n"
 																	"@param sizeY The number of tiles per column to load.\n"
 																	"@return No return value.") {
@@ -135,7 +235,7 @@ ConsoleMethod(TileGrid, updateWindowCenter, void, 2, 2, "Updates the center of t
 		object->updateWindowCenter();
 }
 
-ConsoleMethod(TileGrid, initializeGridTile, void, 7, 7,  "(float strideX, [float strideY]]) - Sets the stride which scales the position at which sprites are created.\n"
+ConsoleMethod(TileGrid, initializeGridTile, void, 7, 7,  "(F32 strideX, [F32 strideY]]) - Sets the stride which scales the position at which sprites are created.\n"
                                                                     "@param tileX The x position of the new tile.\n"
                                                                     "@param tileY The y position of the new tile.\n"
 																	"@param tileAssetID The asset ID of the tile.\n"
@@ -145,7 +245,7 @@ ConsoleMethod(TileGrid, initializeGridTile, void, 7, 7,  "(float strideX, [float
 	object->setTile(std::max(0,dAtoi(argv[2])),std::max(0,dAtoi(argv[3])),argv[4],dAtoi(argv[5]),argv[6]);
 }
 
-ConsoleMethod(TileGrid, updateGridTile, void, 6, 6,  "(float strideX, [float strideY]]) - Sets the stride which scales the position at which sprites are created.\n"
+ConsoleMethod(TileGrid, updateGridTile, void, 6, 6,  "(F32 strideX, [F32 strideY]]) - Sets the stride which scales the position at which sprites are created.\n"
                                                                     "@param tileX The x position of the new tile.\n"
                                                                     "@param tileY The y position of the new tile.\n"
 																	"@param tileAssetID The asset ID of the tile.\n"
@@ -154,14 +254,14 @@ ConsoleMethod(TileGrid, updateGridTile, void, 6, 6,  "(float strideX, [float str
 	object->updateTile(std::max(0,dAtoi(argv[2])),std::max(0,dAtoi(argv[3])),argv[4],dAtoi(argv[5]));
 }
 
-ConsoleMethod(TileGrid, spinGridTile, void, 4, 4,  "(float strideX, [float strideY]]) - Sets the stride which scales the position at which sprites are created.\n"
+ConsoleMethod(TileGrid, spinGridTile, void, 4, 4,  "(F32 strideX, [F32 strideY]]) - Sets the stride which scales the position at which sprites are created.\n"
                                                                     "@param tileX The x position of the new tile.\n"
                                                                     "@param tileY The y position of the new tile.\n"
                                                                     "@return No return value.") {
 	object->spinTile(std::max(0,dAtoi(argv[2])),std::max(0,dAtoi(argv[3])));
 }
 
-ConsoleMethod(TileGrid, resizeGrid, void, 4, 4,  "(float strideX, [float strideY]]) - Sets the number of tiles on the grid.\n"
+ConsoleMethod(TileGrid, resizeGrid, void, 4, 4,  "(F32 strideX, [F32 strideY]]) - Sets the number of tiles on the grid.\n"
                                                                     "@param tileX The new number of tiles, X.\n"
                                                                     "@param tileY The new number of tiles, Y.\n"
                                                                     "@return No return value.") {
@@ -172,39 +272,15 @@ ConsoleMethod(TileGrid, clearSprites, void, 2, 2,    "() - Removes all sprites.\
                                                             "@return No return value." )
 {
 	object->setDisplayed(false);
-    //for(int i=0; i <= object->maxIndex(); i++) {
-//		object->mTiles[i].removeFromSpriteBatch(object->mCompositeSprite);
-//	}
-	//return;
 }
 
 ConsoleMethod(TileGrid, addSprites, void, 2, 2,    "() - Adds all sprites.\n"
                                                             "@return No return value." )
 {
 	object->setDisplayed(true);
-    //std::stringstream ss;
-	//ss.str("Setting to: ");
-	//ss << "<Size = " << object->mSizeX << " , " << object->mSizeY << ">, so eval up to " << (((object->mSizeY) * (object->mSizeX))-1);
-
-	//std::string s = ss.str();
-
-	//Con::printf(s.c_str());
-	//for(int i=0; i <= object->maxIndex(); i++)
-			//object->mTiles[i].addToSpriteBatch(object->mCompositeSprite);
-	//for(int i=0; i<(object->mSizeY*(object->mSizeX)); i++) {
-			//std::stringstream ss;
-			//ss.str("Setting to: ");
-			//ss << "<Size = " << object->mSizeX << " , " << object->mSizeY << "> Evaluating " << i;
-
-			//std::string s = ss.str();
-
-			//Con::printf(s.c_str());
-		//object->mTiles[i].addToSpriteBatch(object->mCompositeSprite);
-	//}
-	//return;
 }
 
-ConsoleMethod(TileGrid, setDefaultSpriteStride, void, 3, 4,  "(float strideX, [float strideY]]) - Sets the stride which scales the position at which sprites are created.\n"
+ConsoleMethod(TileGrid, setDefaultSpriteStride, void, 3, 4,  "(F32 strideX, [F32 strideY]]) - Sets the stride which scales the position at which sprites are created.\n"
                                                                     "@param strideX The default stride of the local X axis.\n"
                                                                     "@param strideY The default stride of the local Y axis.\n"
                                                                     "@return No return value.")
@@ -215,29 +291,19 @@ ConsoleMethod(TileGrid, setDefaultSpriteStride, void, 3, 4,  "(float strideX, [f
     const U32 elementCount = Utility::mGetStringElementCount(argv[2]);
 
     // ("strideX strideY")
-    if ( (elementCount == 2) && (argc == 3) )
-    {
+    if ( (elementCount == 2) && (argc == 3) ) {
         stride.x = dAtof(Utility::mGetStringElement(argv[2], 0));
         stride.y = dAtof(Utility::mGetStringElement(argv[2], 1));
-    }
-    // (strideX, [strideY])
-    else if (elementCount == 1)
-    {
+    } else if (elementCount == 1) { // (strideX, [strideY])
         stride.x = dAtof(argv[2]);
-
-        if (argc > 3)
-            stride.y = dAtof(argv[3]);
-        else
-            stride.y = stride.x;
-    }
-    // Invalid
-    else
-    {
-        Con::warnf("CompositeSprite::setDefaultSpriteStride() - Invalid number of parameters!");
+        if (argc > 3) stride.y = dAtof(argv[3]);
+        else stride.y = stride.x;
+    } else { // Invalid
+		Con::warnf("CompositeSprite::setDefaultSpriteStride() - Invalid number of parameters!");
         return;
     }
 
-    object->setDefaultSpriteStride( stride );
+    object->setDefaultSpriteStride(stride);
 }
 
 #endif

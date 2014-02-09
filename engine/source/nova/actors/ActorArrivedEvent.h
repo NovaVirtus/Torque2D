@@ -31,53 +31,19 @@
 
 class ActorArrivedEvent : public SimEvent {
 private:
-    //Vector2     mTargetWorldPoint;
-    //bool        mAutoStop;
-    //bool        mWarpToTarget;
-	int mLogicalX;
-	int mLogicalY;
+	U32 mLogicalX;
+	U32 mLogicalY;
 public:
-	ActorArrivedEvent(const int logicalX, const int logicalY) {
+	ActorArrivedEvent(const U32 logicalX, const U32 logicalY) {
 		mLogicalX = logicalX;
 		mLogicalY = logicalY;
 	}
-    /*ActorArrivedEvent( const Vector2& targetWorldPoint, const bool autoStop, const bool warpToTarget  ) :
-        mAutoStop( autoStop ),
-        mWarpToTarget( warpToTarget ),
-        mTargetWorldPoint( targetWorldPoint ) {}*/
+
     virtual ~ActorArrivedEvent() {}
 
-    virtual void process(SimObject *object)
-    {
-        /*// Fetch scene object.
-        SceneObject* pSceneObject = (dynamic_cast<SceneObject*>(object));
-        if (pSceneObject == NULL )
-            return;
-
-        // Are we auto stopping?
-        if ( mAutoStop )
-        {
-            // Yes, so reset linear velocity.
-            pSceneObject->setLinearVelocity( Vector2::getZero() );
-        }
-
-        // Are we warping to target?
-        if ( mWarpToTarget )
-        {
-            // Yes, so set position to the target.
-            pSceneObject->setPosition( mTargetWorldPoint );
-        }
-
-        // Reset event Id.
-        pSceneObject->mMoveToEventId = 0;
-		*/
-        // Script callback.
-
+    virtual void process(SimObject *object) {
 		Actor* curActor = (Actor*) object;
-		curActor->mLogicalX = mLogicalX;
-		curActor->mLogicalY = mLogicalY;
-		Con::executef(object, 2, "onArrived");
-        //Con::executef( object, 2, "onMoveToComplete", mTargetWorldPoint.scriptThis() );
+		curActor->arrivedAtDestination(mLogicalX, mLogicalY);
     }
 
 };

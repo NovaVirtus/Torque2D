@@ -4,8 +4,7 @@
 #include "Tile.h"
 IMPLEMENT_CONOBJECT(Tile);  
 
-void Tile::copyTo( SimObject* object )  
-{  
+void Tile::copyTo(SimObject* object) {  
     // Fetch other object.  
    Tile* pTile = static_cast<Tile*>( object );  
   
@@ -18,8 +17,7 @@ void Tile::copyTo( SimObject* object )
    // Copy the state. 
 } 
 
-bool Tile::onAdd()  
-{  
+bool Tile::onAdd() {
     // Fail if the parent fails.  
     if ( !Parent::onAdd() )  
         return false;  
@@ -29,34 +27,35 @@ bool Tile::onAdd()
 	return true;
 }  
   
-void Tile::onRemove()  
-{  
+void Tile::onRemove() {
     // Do some work here.  
 } 
 
 Tile::Tile() {  
 	mSpriteID=0;
+	mCostPast = 0;
+	mCostFuture = 0;
+	mLogicalX = 0;
+	mLogicalY = 0;
+	mInClosedSet = false;
+	mFrame = 0;
+	mExtraMovementCost = 0;
 } 
 
 Tile::~Tile() {
 	free(mTileAssetID);
 }
 
-void Tile::initializeTile(const char* tileAssetID, const U32 frame, const char* logicalPositionArgs, const Vector2& center) {
+void Tile::initializeTile(const char* tileAssetID, const U32 frame, const char* logicalPositionArgs, const Vector2& center, const U32 logicalX, const U32 logicalY) {
 	mTileAssetID = (char*)malloc(strlen(tileAssetID)+1 * sizeof(char));
 	strcpy(mTileAssetID, tileAssetID);
 	mFrame = frame;
-	//Con::printf("Initialized tile with value:");
-	//Con::printf(logicalPositionArgs);
-	//Con::printf("Initial tile asset ID");
-	//Con::printf(tileAssetID);
-	//Con::printf("Copied tile asset ID");
-	//Con::printf(mTileAssetID);
 	mLogicalPosition = new SpriteBatchItem::LogicalPosition(logicalPositionArgs);
 	mCenter = new Vector2();
 	mCenter->x = center.x;
 	mCenter->y = center.y;
-	//strcpy(mArgs, logicalPositionArgs);
+	mLogicalX = logicalX;
+	mLogicalY = logicalY;
 }
 
 void Tile::updateTile(const char* tileAssetID, const U32 frame, SpriteBatch* batch) {
@@ -73,12 +72,7 @@ void Tile::updateTile(const char* tileAssetID, const U32 frame, SpriteBatch* bat
 
 void Tile::spinTile(SpriteBatch* batch) {
 	if(mSpriteID == 0) return;
-	//std::stringstream ss;
-	//ss.str("");
-	//ss << "Setting frame from " << mFrame;
-	mFrame = (mFrame+1)%4;
-	//ss << " to " << mFrame;
-	//Con::printf(ss.str().c_str());
+	mFrame = (mFrame+1) % 4;
 	batch->selectSpriteId(mSpriteID);
 	batch->setSpriteImageFrame(mFrame);
 }

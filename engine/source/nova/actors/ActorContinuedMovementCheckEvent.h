@@ -31,51 +31,34 @@
 
 class ActorContinuedMovementCheckEvent : public SimEvent {
 private:
-    //Vector2     mTargetWorldPoint;
-    //bool        mAutoStop;
-    //bool        mWarpToTarget;
-	int mLogicalX;
-	int mLogicalY;
+	U32 mLogicalX;
+	U32 mLogicalY;
+	U32 mTimeUntilArrive;
 public:
-	ActorContinuedMovementCheckEvent(const int logicalX, const int logicalY) {
+	ActorContinuedMovementCheckEvent(const U32 logicalX, const U32 logicalY, const U32 timeUntilArrive) {
 		mLogicalX = logicalX;
 		mLogicalY = logicalY;
+		mTimeUntilArrive = timeUntilArrive;
+		std::stringstream ss2;
+		ss2 << "||> Continued movement check arriving in " << timeUntilArrive;
+		Con::printf(ss2.str().c_str());
 	}
-    /*ActorArrivedEvent( const Vector2& targetWorldPoint, const bool autoStop, const bool warpToTarget  ) :
-        mAutoStop( autoStop ),
-        mWarpToTarget( warpToTarget ),
-        mTargetWorldPoint( targetWorldPoint ) {}*/
     virtual ~ActorContinuedMovementCheckEvent() {}
 
-    virtual void process(SimObject *object)
-    {
-        /*// Fetch scene object.
-        SceneObject* pSceneObject = (dynamic_cast<SceneObject*>(object));
-        if (pSceneObject == NULL )
-            return;
-
-        // Are we auto stopping?
-        if ( mAutoStop )
-        {
-            // Yes, so reset linear velocity.
-            pSceneObject->setLinearVelocity( Vector2::getZero() );
-        }
-
-        // Are we warping to target?
-        if ( mWarpToTarget )
-        {
-            // Yes, so set position to the target.
-            pSceneObject->setPosition( mTargetWorldPoint );
-        }
-
-        // Reset event Id.
-        pSceneObject->mMoveToEventId = 0;
-		*/
-        // Script callback.
+    virtual void process(SimObject *object) {
 		Actor* curActor = (Actor*) object;
-		curActor->mLogicalX = mLogicalX;
-		curActor->mLogicalY = mLogicalY;
-		Con::executef(object, 2, "checkContinuedMovement");
+		std::stringstream ss;
+		ss << "Continued movement check event fired: " << mLogicalX << "," << mLogicalY << "," << mTimeUntilArrive;
+		Con::printf(ss.str().c_str());
+		curActor->advanceActionPlan(mLogicalX, mLogicalY, mTimeUntilArrive);
+		/*
+		if(!(curActor->advanceActionPlan(mLogicalX, mLogicalY, mTimeUntilArrive))) {
+			curActor->setArrivingIn(mLogicalX, mLogicalY, mTimeUntilArrive);
+		} else {
+
+
+		}
+		*/
         //Con::executef( object, 2, "onMoveToComplete", mTargetWorldPoint.scriptThis() );
     }
 

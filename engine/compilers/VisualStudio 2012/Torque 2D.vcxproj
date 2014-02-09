@@ -67,6 +67,9 @@
     <TargetName Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">Torque2D</TargetName>
     <TargetName Condition="'$(Configuration)|$(Platform)'=='Shipping|Win32'">Torque2D</TargetName>
   </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
+    <IncludePath>$(VCInstallDir)include;$(VCInstallDir)atlmfc\include;$(WindowsSDK_IncludePath);D:\Program Files\Code Libraries\Boost_1_55_0;</IncludePath>
+  </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <Midl>
       <TypeLibraryName>$(OutDir)Torque2D.tlb</TypeLibraryName>
@@ -122,8 +125,8 @@
       </HeaderFileName>
     </Midl>
     <ClCompile>
-      <Optimization>MinSpace</Optimization>
-      <InlineFunctionExpansion>OnlyExplicitInline</InlineFunctionExpansion>
+      <Optimization>Full</Optimization>
+      <InlineFunctionExpansion>AnySuitable</InlineFunctionExpansion>
       <AdditionalIncludeDirectories>../../Lib/zlib;../../Lib/lpng;../../Lib/ljpeg;../../Lib/openal/win32;../../Source;../../source/testing/googleTest;../../source/testing/googleTest/include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <PreprocessorDefinitions>UNICODE;_CRT_SECURE_NO_DEPRECATE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <StringPooling>true</StringPooling>
@@ -142,6 +145,10 @@
       <CompileAs>CompileAsCpp</CompileAs>
       <MultiProcessorCompilation>true</MultiProcessorCompilation>
       <DisableSpecificWarnings>4800;4100;4127;4512</DisableSpecificWarnings>
+      <FavorSizeOrSpeed>Speed</FavorSizeOrSpeed>
+      <OmitFramePointers>true</OmitFramePointers>
+      <EnableFiberSafeOptimizations>true</EnableFiberSafeOptimizations>
+      <WholeProgramOptimization>true</WholeProgramOptimization>
     </ClCompile>
     <ResourceCompile>
       <PreprocessorDefinitions>NDEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
@@ -906,10 +913,10 @@
     <ClInclude Include="..\..\source\network\serverQuery.h" />
     <ClInclude Include="..\..\source\network\tcpObject.h" />
     <ClInclude Include="..\..\source\network\telnetConsole.h" />
+    <ClInclude Include="..\..\source\nova\actors\ActionPlan.h" />
     <ClInclude Include="..\..\source\nova\actors\Actor.h" />
     <ClInclude Include="..\..\source\nova\actors\ActorArrivedEvent.h" />
     <ClInclude Include="..\..\source\nova\actors\ActorContinuedMovementCheckEvent.h" />
-    <ClInclude Include="..\..\source\nova\actors\ActorEnteredTileEvent.h" />
     <ClInclude Include="..\..\source\nova\tiles\Tile.h" />
     <ClInclude Include="..\..\source\nova\tiles\TileGrid.h" />
     <ClInclude Include="..\..\source\persistence\taml\taml.h" />

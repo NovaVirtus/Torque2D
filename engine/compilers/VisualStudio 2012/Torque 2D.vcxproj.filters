@@ -2703,10 +2703,10 @@
     <ClInclude Include="..\..\source\nova\actors\ActorArrivedEvent.h">
       <Filter>nova\actors</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\source\nova\actors\ActorEnteredTileEvent.h">
+    <ClInclude Include="..\..\source\nova\actors\ActorContinuedMovementCheckEvent.h">
       <Filter>nova\actors</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\source\nova\actors\ActorContinuedMovementCheckEvent.h">
+    <ClInclude Include="..\..\source\nova\actors\ActionPlan.h">
       <Filter>nova\actors</Filter>
     </ClInclude>
   </ItemGroup>
