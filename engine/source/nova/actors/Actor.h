@@ -76,24 +76,15 @@ class Actor : public SimObject
 
 		inline void updateCurrentLogicalPosition() {
 			Vector2 currentPosition = mCompositeSprite->getPosition();
-			std::stringstream ss;
-			ss << "2Actor updating local coordinates; currently thinks it's at (sprite = " << currentPosition.x << "," << currentPosition.y << ") " << mLogicalX << "," << mLogicalY;
-			Con::printf("UCLP1");
 			mTileGrid->getLogicalCoordinates(currentPosition.x, currentPosition.y, mLogicalX, mLogicalY, true);
-			Con::printf("UCLP2");
-			ss << "; after update: " << mLogicalX << "," << mLogicalY;
-			Con::printf(ss.str().c_str());
-			Con::printf("UCLP3");
+			
 		}
 
 		inline bool startRelativeMove(const int relativeX, const int relativeY) {
-			Con::printf("StartRelativeMove1");
 			//if(nextStep) return false;
-			Con::printf("StartRelativeMove2");
 			U32 toX, toY;
 
 			if(mTileGrid->getRelativeMove(mLogicalX, mLogicalY, relativeX, relativeY, toX, toY)) {
-				Con::printf("StartRelativeMove3");
 				if(mHasTarget && (mTargetX == toX && mTargetY == toY)) return true;
 				cancelCurrentMove();
 				ActionPlan* newPlan = new ActionPlan(toX, toY);
@@ -105,7 +96,6 @@ class Actor : public SimObject
 				return true;
 			} else {
 				cancelCurrentMove();
-				Con::printf("StartRelativeMove3-f");
 				return false;
 			}
 		}
@@ -115,15 +105,9 @@ class Actor : public SimObject
 			cancelCurrentMove();
 			ActionPlan* newPlan = mTileGrid->getPathToTarget(mLogicalX, mLogicalY, toX, toY);
 			if(!newPlan) {
-				std::stringstream ss;
-				ss << "Actor cannot path from " << mLogicalX << "," << mLogicalY << " to " << toX << "," << toY << "!";
-				Con::printf(ss.str().c_str());
 				return false; // No path possible
 			}
 			nextStep = newPlan;
-			std::stringstream ss;
-			ss << "Actor trying to path";
-			Con::printf(ss.str().c_str());
 			mHasTarget = true;
 			mTargetX = toX;
 			mTargetY = toY;
@@ -134,7 +118,6 @@ class Actor : public SimObject
 
 		inline bool overrideCurrentMoveRelative(int relativeX, int relativeY) {
 			advanceOverrideMoveFlag = false;
-			Con::printf("OCMR");
 			updateCurrentLogicalPosition();
 			//cancelCurrentMove();
 			// Pass in 0,0 -> "stop"
@@ -151,27 +134,20 @@ class Actor : public SimObject
 		inline bool overrideCurrentMoveAbsolute(const U32 toX, const U32 toY) {
 			if(mHasTarget && (mTargetX == toX && mTargetY == toY)) return true; // Maybe should be false...
 			advanceOverrideMoveFlag = false;
-			Con::printf("Override current move Absolute");
 			updateCurrentLogicalPosition();
 			
-			Con::printf("Trying to override");
-
 			//cancelCurrentMove();
 			if(startAbsoluteMove(toX, toY)) {
 				return true;
 			} else {
 				cancelCurrentMove();
 				recenterInCurrentTile();
-				Con::printf("Trying to execute cancelled move statement - abs");
 				Con::executef(this, 2, "onMoveCancelled");
 				return false;
 			}
 		}
 		
 		inline void arrivedAtDestination(U32 destinationX, U32 destinationY) {
-			std::stringstream ss;
-			ss << "Actor arrived at destination " << destinationX << ", " << destinationY;
-			Con::printf(ss.str().c_str());
 			deleteActionPlan(nextStep);
 			mLogicalX = destinationX;
 			mLogicalY = destinationY;
@@ -189,21 +165,14 @@ class Actor : public SimObject
 
 
 		inline void debugActionPlan() {
-			std::stringstream ss;
-			ss << "Action plan = ";
 			ActionPlan* current;
 			for(current = nextStep; current != 0; current = current->nextStep) {
 				Tile* t = mTileGrid->getTile(current->x, current->y);
 				Vector2* position = t->mCenter;
-				ss << "<Logical" << current->x << "," << current->y << " -> World" << position->x << "," << position->y << "> ";
 			}
-			Con::printf(ss.str().c_str());
 		}
 	
 		inline void startActionPlan(ActionPlan* plan) {
-			std::stringstream ss;
-			ss << "Actor starting action plan";
-			Con::printf(ss.str().c_str());
 			// deleteActionPlan(nextStep); Should never have to delete...
 			nextStep = plan;
 			moveToPosition(nextStep->x, nextStep->y);

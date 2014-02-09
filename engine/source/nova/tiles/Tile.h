@@ -39,22 +39,17 @@ class Tile : public SimObject
 		void addToSpriteBatch(SpriteBatch* batch);
 		void removeFromSpriteBatch(SpriteBatch* batch);
 
-		inline F32 actualDistance(Tile* to, F32 euclidianDistance) { // Would in theory account for things like walls and etc.
-			//if(to == 0) Con::printf("Null distance..");
-			if(to->mFrame == 2) {
-				Con::printf("Hitting cabin..");
-				return euclidianDistance + (F32)3;
-			}
-
-			return (F32)0.05 + euclidianDistance;
-			//F32 xDist = (F32)(mLogicalX - to->mLogicalX);
-			//F32 yDist = (F32)(mLogicalY - to->mLogicalY);
-			//return sqrt((xDist * xDist) + (yDist * yDist));
+		inline F32 actualDistance(Tile* to, F32 euclidianDistance, Tile* intermediateOne, Tile* intermediateTwo) { // Would in theory account for things like walls and etc.
+			
+			return (F32)0.05 + euclidianDistance + to->mExtraMovementCost + 
+				(F32)((intermediateOne == 0 ? 0 : 0.5 * intermediateOne->mExtraMovementCost) + (intermediateTwo == 0 ? 0 : 0.5 * intermediateTwo->mExtraMovementCost));
+		
 		}
 		inline F32 estimatedDistance(Tile* to) {
+			if(this == to) return 0;
 			F32 xDist = ((F32)(mLogicalX)) - ((F32)(to->mLogicalX));
 			F32 yDist = ((F32)(mLogicalY)) - ((F32)(to->mLogicalY));
-			return (F32) sqrt((xDist * xDist) + (yDist * yDist));
+			return ((F32) sqrt((xDist * xDist) + (yDist * yDist))) + to->mExtraMovementCost;
 		}
 
 		F32 mCostPast;

@@ -56,6 +56,7 @@ void Tile::initializeTile(const char* tileAssetID, const U32 frame, const char* 
 	mCenter->y = center.y;
 	mLogicalX = logicalX;
 	mLogicalY = logicalY;
+	mExtraMovementCost = (F32)(mFrame == 2? 99 : 0);
 }
 
 void Tile::updateTile(const char* tileAssetID, const U32 frame, SpriteBatch* batch) {
@@ -68,6 +69,7 @@ void Tile::updateTile(const char* tileAssetID, const U32 frame, SpriteBatch* bat
 		batch->selectSpriteId(mSpriteID);
 		batch->setSpriteImage(tileAssetID, frame);
 	}
+	mExtraMovementCost = (F32)(mFrame == 2? 99 : 0);
 }
 
 void Tile::spinTile(SpriteBatch* batch) {
@@ -75,6 +77,8 @@ void Tile::spinTile(SpriteBatch* batch) {
 	mFrame = (mFrame+1) % 4;
 	batch->selectSpriteId(mSpriteID);
 	batch->setSpriteImageFrame(mFrame);
+
+	mExtraMovementCost = (F32)(mFrame == 2? 99 : 0);
 }
 
 void Tile::addToSpriteBatch(SpriteBatch* batch) {

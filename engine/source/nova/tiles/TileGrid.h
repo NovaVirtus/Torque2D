@@ -68,9 +68,24 @@ class TileGrid : public SimObject
     public:  
 		//void TileGrid::tryAStarAddNeighbor(priority_queue<Tile*, vector<Tile*>, TileDistanceCompare> openSet, Tile* from, Tile* goal, Tile* t);
 		inline bool TryToAddNeighbor(Tile* from, S32 offsetX, S32 offsetY, F32 curCostPast, Tile* goal, Tile* & to, F32 fixedCost) {
+			Tile* intermediateOne = 0;
+			Tile* intermediateTwo = 0;
 			if(!isValidLocation(from->mLogicalX + offsetX, from->mLogicalY + offsetY)) return false;
 			to = &mTiles[index(from->mLogicalX + offsetX, from->mLogicalY + offsetY)];
-			F32 tentativeScore = curCostPast + from->actualDistance(to, fixedCost);
+			if(offsetX == 2) {
+				intermediateOne = &mTiles[index(from->mLogicalX + 1, from->mLogicalY)];
+				intermediateTwo = &mTiles[index(from->mLogicalX + 1, from->mLogicalY + offsetY)];
+			} else if(offsetX == -2) {
+				intermediateOne = &mTiles[index(from->mLogicalX - 1, from->mLogicalY)];
+				intermediateTwo = &mTiles[index(from->mLogicalX - 1, from->mLogicalY + offsetY)];
+			} else if(offsetY == 2) {
+				intermediateOne = &mTiles[index(from->mLogicalX, from->mLogicalY + 1)];
+				intermediateTwo = &mTiles[index(from->mLogicalX + offsetX, from->mLogicalY + 1)];
+			} else if(offsetY == -2) {
+				intermediateOne = &mTiles[index(from->mLogicalX, from->mLogicalY - 1)];
+				intermediateTwo = &mTiles[index(from->mLogicalX + offsetX, from->mLogicalY - 1)];
+			}
+			F32 tentativeScore = curCostPast + from->actualDistance(to, fixedCost, intermediateOne, intermediateTwo);
 			if(tentativeScore < to->mCostPast) {
 				to->mCameFrom = from;
 				to->mCostPast = tentativeScore;
@@ -166,10 +181,6 @@ class TileGrid : public SimObject
 		inline ActionPlan* getPathToTarget(const U32 fromX, const U32 fromY, const U32 toX, const U32 toY) {
 			if(!isValidLocation(toX, toY)) return 0;
 			tryAStar(&mTiles[index(fromX, fromY)], &mTiles[index(toX, toY)]);
-			std::stringstream ss;
-			ss << "Just ran AStar...";
-			Con::printf(ss.str().c_str());
-			// = new ActionPlan(toX, toY);
 			ActionPlan* next = new ActionPlan(toX, toY);
 			ActionPlan* head = next;
 
@@ -195,7 +206,7 @@ class TileGrid : public SimObject
 				}
 				t = t->mCameFrom;
 			}*/
-			debugSpecifiedActionPlan(head);
+			//debugSpecifiedActionPlan(head);
 			return head;
 		}
 

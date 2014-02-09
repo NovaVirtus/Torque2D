@@ -137,10 +137,6 @@ bool Actor::moveToPosition(const U32 logicalX, const U32 logicalY) {
 	U32 currentTime = Sim::getCurrentTime();
 	U32 continuedMovementTime = totalMoveTime;
 	
-	std::stringstream sNew;
-	sNew << "Initialmovement: " << totalMoveTime << "; ";
-	
-
 	if(TIME_BEFORE_ARRIVE_TO_CHECK_MOVEMENT + MINIMUM_ARRIVAL_TIME > totalMoveTime) {
 		continuedMovementTime = TIME_BEFORE_ARRIVE_TO_CHECK_MOVEMENT; // It always takes at least (a very short time) to arrive in a new square
 		totalMoveTime = continuedMovementTime + MINIMUM_ARRIVAL_TIME;
@@ -148,8 +144,6 @@ bool Actor::moveToPosition(const U32 logicalX, const U32 logicalY) {
 		continuedMovementTime = (totalMoveTime - TIME_BEFORE_ARRIVE_TO_CHECK_MOVEMENT);
 	}
 
-	sNew << " Movementtime calc: " << continuedMovementTime << " , " << totalMoveTime;
-	Con::printf(sNew.str().c_str());
 	//totalMoveTime = 1000;
 	//continuedMovementTime = 900;
 

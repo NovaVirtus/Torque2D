@@ -52,11 +52,7 @@ private:
 
 void TileGrid::tryAStar(Tile* origin, Tile* goal) {
 	std::priority_queue<Tile*, vector<Tile*>, TileDistanceCompare> openSet;
-	std::priority_queue<Tile*, vector<Tile*>, TileDistanceCompare> debugSet;
-	//Tile* origin = &mTiles[0];
-	//Tile* goal = &mTiles[maxIndex()];
 	Tile* current;
-	Tile* debug;
 	Tile* neighbor;
 	U32 baseX, baseY;
 	F32 currentCostPast;
@@ -66,50 +62,15 @@ void TileGrid::tryAStar(Tile* origin, Tile* goal) {
 		mTiles[i].mCameFrom = 0;
 	}
 	openSet.push(origin);
-	origin->mCostPast = 0; // F32 mCostPast;  -> gScore
+	origin->mCostPast = 0;
 	origin->mCostFuture = origin->estimatedDistance(goal); // F32 mCostFuture; -> fScore
-	stringstream distance;
-	distance << "Overall estimated cost from " << origin->mLogicalX << "," << origin->mLogicalY << " to " << goal->mLogicalX << "," << goal->mLogicalY << " = " << origin->estimatedDistance(goal);
-	Con::printf(distance.str().c_str());
 	while(!openSet.empty()) {
 		current = openSet.top();
-		//Con::printf("Trying something!");
-		stringstream debugOne;
-		debugOne << "Queue state: ";
-		while(!openSet.empty()) {
-			debug = openSet.top();
-			debugSet.push(debug);
-			debugOne << "<" << debug->mLogicalX << "," << debug->mLogicalY << "; Past = " << debug->mCostPast << " Future = " << debug->mCostFuture << "> ";
-			openSet.pop();
-		}
-		while(!debugSet.empty()) {
-			debug = debugSet.top();
-			debugSet.pop();
-			openSet.push(debug);
-		}
-		Con::printf(debugOne.str().c_str());
 		openSet.pop();
-		std::stringstream ss;
-		ss << "Astar, considering " << current->mLogicalX << "," << current->mLogicalY << ": Currently evaluating a cabin = " << (current->mFrame == 2) << " as frame is " << current->mFrame << ", so current cost is " << current->mCostPast;
-		//ss << "AStar Test: " << current->mLogicalX << "," << current->mLogicalY << " = " << current->mInClosedSet << "; trying to get to " << goal->mLogicalX << "," << goal->mLogicalY;
-		Con::printf(ss.str().c_str());
-
 		if(current->mInClosedSet) continue;
-		//Con::printf("Trying something 2!");
-		if(current == goal) {
-			Con::printf("Found goal!");
-			stringstream ss2;
-			ss2 << "Goal = " << current->mLogicalX << "," << current->mLogicalY;
-			Con::printf(ss2.str().c_str());
-			while(current != 0) {
-				std::stringstream ss3;
-				ss3 << "Astar step: " << current->mLogicalX << "," << current->mLogicalY;
-				Con::printf(ss3.str().c_str());
-				current = current->mCameFrom;
-			}
 
-			break;
-		}
+		if(current == goal) break;
+
 		current->mInClosedSet = true;
 		currentCostPast = current->mCostPast;
 		baseX = current->mLogicalX;
@@ -146,142 +107,6 @@ void TileGrid::tryAStar(Tile* origin, Tile* goal) {
 				if(baseY < mSizeY && (baseX + 2) * (baseY + 1) <= maxIndex()) if(TryToAddNeighbor(current, 2, 1, currentCostPast, goal, neighbor, SQRT5)) openSet.push(neighbor);
 			}
 		}
-
-		/*
-		//Con::printf("Enumerating neighbors!");
-		if(baseX > 0) { // Try to the left
-			if(baseY > 0) { // Down + Left
-				if(TryToAddNeighbor(current, -1, -1, currentCostPast, goal, neighbor, SQRT2)) {
-					std::stringstream ss;
-					ss << "  Neighbor matched criteria: " << neighbor->mLogicalX << ", " << neighbor->mLogicalY;
-					//Con::printf(ss.str().c_str());
-					openSet.push(neighbor);
-
-				}
-				//neighbor = &mTiles[index(baseX - 1, baseY - 1)];
-				//tentativeScore = current->mCostPast + current->actualDistance(neighbor, SQRT2); // 1 is distance for now
-				//if(tentativeScore < neighbor->mCostPast) {  neighbor->mCameFrom = current; neighbor->mCostPast = tentativeScore; neighbor->mCostFuture = tentativeScore + neighbor->estimatedDistance(goal); }
-				// Knights Move Down + Left
-				if(baseY > 1) {
-					if(TryToAddNeighbor(current, -1, -2, currentCostPast, goal, neighbor, SQRT5)) {
-						std::stringstream ss;
-						ss << "  Neighbor matched criteria: " << neighbor->mLogicalX << ", " << neighbor->mLogicalY;
-						//Con::printf(ss.str().c_str());
-						openSet.push(neighbor);
-					}
-				}
-			}
-			// Left
-			if(TryToAddNeighbor(current, -1, 0, currentCostPast, goal, neighbor, 1)) {
-				std::stringstream ss;
-				ss << "  Neighbor matched criteria: " << neighbor->mLogicalX << ", " << neighbor->mLogicalY;
-				//Con::printf(ss.str().c_str());
-				openSet.push(neighbor);
-			}
-
-			//Up + Left
-			if(baseY < mSizeY) { // Can't hit this case unless x is at max && (baseX * (baseY + 1)) < maxIndex()) {
-				if(TryToAddNeighbor(current, -1, 1, currentCostPast, goal, neighbor, SQRT2)) openSet.push(neighbor);
-				if((baseY + 1) < mSizeY) { // Can't hit this case unless x is at max&& ((baseX - 1) * (baseY + 2)) < maxIndex()) { // Knight's Move Up + Left
-					if(TryToAddNeighbor(current, -1, 2, currentCostPast, goal, neighbor, SQRT5)) {
-						std::stringstream ss;
-						ss << "  Neighbor matched criteria: " << neighbor->mLogicalX << ", " << neighbor->mLogicalY;
-						//Con::printf(ss.str().c_str());
-						openSet.push(neighbor);
-					}
-				}
-			}
-			//Knight's Moves to Left
-			if(baseX > 1) { // Left
-				if(baseY > 0) {
-					if(TryToAddNeighbor(current, -2, -1, currentCostPast, goal, neighbor, SQRT5)) {
-						std::stringstream ss;
-						ss << "  Neighbor matched criteria: " << neighbor->mLogicalX << ", " << neighbor->mLogicalY;
-						//Con::printf(ss.str().c_str());
-						openSet.push(neighbor);
-					}
-				}
-				if(baseY < mSizeY) {
-					if(TryToAddNeighbor(current, -2, 1, currentCostPast, goal, neighbor, SQRT5)) {
-						std::stringstream ss;
-						ss << "  Neighbor matched criteria: " << neighbor->mLogicalX << ", " << neighbor->mLogicalY;
-						//Con::printf(ss.str().c_str());
-						openSet.push(neighbor);
-					}
-				}
-			}
-		}
-		// Try up/down
-		if(baseY > 0) {
-			if(TryToAddNeighbor(current, 0, -1, currentCostPast, goal, neighbor, 1)) {
-				std::stringstream ss;
-				ss << "  Neighbor matched criteria: " << neighbor->mLogicalX << ", " << neighbor->mLogicalY;
-				//Con::printf(ss.str().c_str());
-				openSet.push(neighbor);
-			}
-		}
-		if(baseY < mSizeY && (baseX * (baseY + 1)) <= maxIndex()) {
-			if(TryToAddNeighbor(current, 0, 1, currentCostPast, goal, neighbor, 1)) {
-				std::stringstream ss;
-				ss << "  Neighbor matched criteria: " << neighbor->mLogicalX << ", " << neighbor->mLogicalY;
-				//Con::printf(ss.str().c_str());
-				openSet.push(neighbor);
-			}
-		}
-		// Try to the right
-		if(baseX < mSizeX) {
-			if(baseY > 0) { // Down+Right
-				if(TryToAddNeighbor(current, 1, -1, currentCostPast, goal, neighbor, SQRT2)) {
-					std::stringstream ss;
-					ss << "  Neighbor matched criteria: " << neighbor->mLogicalX << ", " << neighbor->mLogicalY;
-					//Con::printf(ss.str().c_str());
-					openSet.push(neighbor);
-				}
-			}
-			if((baseX + 1) * baseY <= maxIndex()) {
-				if(TryToAddNeighbor(current, 1, 0, currentCostPast, goal, neighbor, 1)) {
-					std::stringstream ss;
-					ss << "  Neighbor matched criteria: " << neighbor->mLogicalX << ", " << neighbor->mLogicalY;
-					//Con::printf(ss.str().c_str());
-					openSet.push(neighbor);
-				}
-			}
-			if(baseY < mSizeY && ((baseX + 1) * (baseY + 1)) <= maxIndex()) {
-				if(TryToAddNeighbor(current, 1, 1, currentCostPast, goal, neighbor, SQRT2)) {
-					std::stringstream ss;
-					ss << "  Neighbor matched criteria: " << neighbor->mLogicalX << ", " << neighbor->mLogicalY;
-					//Con::printf(ss.str().c_str());
-					openSet.push(neighbor);
-				}
-				if((baseY + 1) < mSizeY && ((baseX + 1) * (baseY + 2)) <= maxIndex()) {  // Knight's Move Up + Right
-					if(TryToAddNeighbor(current, 1, 2, currentCostPast, goal, neighbor, SQRT5)) {
-						std::stringstream ss;
-						ss << "  Neighbor matched criteria: " << neighbor->mLogicalX << ", " << neighbor->mLogicalY;
-						//Con::printf(ss.str().c_str());
-						openSet.push(neighbor);
-					}
-				}
-			}
-			//Knight's Moves to Right
-			if(baseX + 1 < mSizeX) {
-				if(baseY > 0) {
-					if(TryToAddNeighbor(current, 2, -1, currentCostPast, goal, neighbor, SQRT5)) {
-						std::stringstream ss;
-						ss << "  Neighbor matched criteria: " << neighbor->mLogicalX << ", " << neighbor->mLogicalY;
-						//Con::printf(ss.str().c_str());
-						openSet.push(neighbor);
-					}
-				}
-				if(baseY < mSizeY && ((baseX + 2) * (baseY + 1)) <= maxIndex()) {
-					if(TryToAddNeighbor(current, 2, 1, currentCostPast, goal, neighbor, SQRT5)) {
-						std::stringstream ss;
-						ss << "  Neighbor matched criteria: " << neighbor->mLogicalX << ", " << neighbor->mLogicalY;
-						//Con::printf(ss.str().c_str());
-						openSet.push(neighbor);
-					}
-				}
-			}
-		}*/
 	}
 	//std::priority_queue<Tile*, 
 	//std::priority_queue<Tile*, 
@@ -427,10 +252,6 @@ void TileGrid::setDisplayCenter(const U32 x, const U32 y) {
 		newMinY = constrainU32ToRange(y, -1 * (S32)mNumDisplayedTilesFromCenterY, 0, mSizeY - 1);
 		newMaxY = constrainU32ToRange(y,  1 * (S32)mNumDisplayedTilesFromCenterY, 0, mSizeY - 1);
 
-		std::stringstream ss;
-		ss << "====TileGrid set display center: " << x << "," << y << " -> window from " << newMinX << "," << newMinY << " - " << newMaxX << "," << newMaxY << "; sizes are " << mSizeX << "," << mSizeY;
-		Con::printf(ss.str().c_str());
-
 		if(newMinX < mMinDisplayedX) {
 			for(U32 curColumn = newMinX; curColumn < (std::min(mMinDisplayedX,newMaxX)); curColumn++) addColumn(curColumn, newMinY, newMaxY); // Don't include mMinDisplayedX because it's already present
 		} else if(newMinX > mMinDisplayedX) {
@@ -493,11 +314,6 @@ bool TileGrid::getRelativeMove(const U32 fromX, const U32 fromY, const S32 offse
 
 	toX = constrainU32ToRange(fromX, offsetX, 0, mSizeX - 1);
 	toY = constrainU32ToRange(fromY, offsetY, 0, mSizeY - 1);
-
-	std::stringstream ss;
-			ss << "Actor getting relative move of " << offsetX << "," << offsetY << " from " << fromX << "," << fromY;
-			ss << " = " << toX << "," << toY;
-			Con::printf(ss.str().c_str());
 
 	/*
 	if(toX >= mSizeX) toX = mSizeX - 1;
@@ -630,16 +446,9 @@ bool TileGrid::getLogicalCoordinates(const F32 worldX, const F32 worldY, U32& lo
 		if(logicalY >= mSizeY) logicalY = mSizeY - 1;
 		// else if(logicalY < 0) logicalY = 0; Won't ever happen - U32
 					
-		std::stringstream ss;
-			ss << "TileGrid returning logical coordinates of " << logicalX << "," << logicalY << " cwg"; 
-			//Con::printf(ss.str().c_str());
-
 		return true;
 	}
 	else {
-		std::stringstream ss;
-			ss << "2TileGrid returning logical coordinates of " << logicalX << "," << logicalY << "ncwg";
-			//Con::printf(ss.str().c_str());
 		return(isValidLocation(logicalX, logicalY));
 	}
 }

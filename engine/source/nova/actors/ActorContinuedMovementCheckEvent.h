@@ -39,17 +39,11 @@ public:
 		mLogicalX = logicalX;
 		mLogicalY = logicalY;
 		mTimeUntilArrive = timeUntilArrive;
-		std::stringstream ss2;
-		ss2 << "||> Continued movement check arriving in " << timeUntilArrive;
-		Con::printf(ss2.str().c_str());
 	}
     virtual ~ActorContinuedMovementCheckEvent() {}
 
     virtual void process(SimObject *object) {
 		Actor* curActor = (Actor*) object;
-		std::stringstream ss;
-		ss << "Continued movement check event fired: " << mLogicalX << "," << mLogicalY << "," << mTimeUntilArrive;
-		Con::printf(ss.str().c_str());
 		curActor->advanceActionPlan(mLogicalX, mLogicalY, mTimeUntilArrive);
 		/*
 		if(!(curActor->advanceActionPlan(mLogicalX, mLogicalY, mTimeUntilArrive))) {

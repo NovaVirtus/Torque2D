@@ -1619,9 +1619,7 @@ bool SceneObject::moveTo( const Vector2& targetWorldPoint, const F32 speed, cons
 		SceneObjectMoveToEvent* pEvent = new SceneObjectMoveToEvent( targetWorldPoint, autoStop, warpToTarget );
 		mMoveToEventId = Sim::postEvent(this, pEvent, Sim::getCurrentTime() + time );
 	} else { //*NCP 1/2014
-		std::stringstream ss;
-		ss << "Scaling by: " << yScaling;
-		Con::printf(ss.str().c_str());
+		
 		linearVelocity.y /= yScaling;
 		const F32 distance = linearVelocity.Normalize( speed );
 
