@@ -14,6 +14,10 @@
 
 using namespace std;
 
+		enum CameraPosition { // "Up" direction
+			CAMERA_NORTH = 0, CAMERA_EAST = 1, CAMERA_SOUTH = 2, CAMERA_WEST = 3
+		};
+
 struct TileDistanceCompare {
 	bool operator()(Tile* t1, Tile* t2) const {
 		//return (t1->lastKnownCost) < (t2->lastKnownCost);
@@ -26,8 +30,11 @@ class TileGrid : public SimObject
     private:  
         typedef SimObject Parent;  
       
+			F32 mDebugSavedX, mDebugSavedY;
+
 			bool mDisplayed;
 			
+			CameraPosition mCurrentCameraRotation;
 			U32 mNumDisplayedTilesFromCenterX;
 			U32 mNumDisplayedTilesFromCenterY;
 
@@ -51,27 +58,118 @@ class TileGrid : public SimObject
 			}
 
 			inline void removeRow(const U32 y, const U32 minCol, const U32 maxCol) {
-				for(U32 x=minCol; x <= maxCol; x++) mTiles[index(x,y)].removeFromSpriteBatch(mCompositeSprite);
+				for(U32 x=minCol; x <= maxCol; x++) mTiles[index(x,y)].removeFromSpriteBatch();
 			}
 			inline void removeColumn(const U32 x, const U32 minRow, const U32 maxRow) {
-				for(U32 y=minRow; y <= maxRow; y++) mTiles[index(x,y)].removeFromSpriteBatch(mCompositeSprite);
+				for(U32 y=minRow; y <= maxRow; y++) mTiles[index(x,y)].removeFromSpriteBatch();
 			}
 			inline void addRow(const U32 y, const U32 minCol, const U32 maxCol) {
-				for(U32 x=minCol; x <= maxCol; x++) mTiles[index(x,y)].addToSpriteBatch(mCompositeSprite);
+				for(U32 x=minCol; x <= maxCol; x++) mTiles[index(x,y)].addToSpriteBatch(mBackgroundSprite, mForegroundSprite);
 			}
 			inline void addColumn(const U32 x, const U32 minRow, const U32 maxRow) {
-				for(U32 y=minRow; y <= maxRow; y++) mTiles[index(x,y)].addToSpriteBatch(mCompositeSprite);
+				for(U32 y=minRow; y <= maxRow; y++) mTiles[index(x,y)].addToSpriteBatch(mBackgroundSprite, mForegroundSprite);
 			}
 		
 	protected:
 
     public:  
+		// Now that I can find intersections,
+		// 1) Check which lines that we'll be crossing (x, y)
+		// 2) For each of these, find the intersection point
+		// 3) Check if crossing and Y boundary within epsilon distance of each other and if so roll them up into one diagonal crossing
+		// 4) Find the distance to this point, calculate time it will take to move there and move at current speed to that point
+		// 5) Schedule event at that point to move to next
+		/*inline void TestFindIntersection() {
+			Point2D result;
+			bool returnValue;
+			stringstream ss;
+			returnValue = FindIntersection(0, 0, 5, 0, 3, -10, 3, 10, result);
+			ss << "TestFind1: " << returnValue << " yields " << result.x << "," << result.y;
+			Con::printf(ss.str().c_str());
+			ss.clear();
+			returnValue = FindIntersection(0, 0, 0, 5, -5, 3, 5, 3, result);
+			ss << "TestFind2: " << returnValue << " yields " << result.x << "," << result.y;
+			Con::printf(ss.str().c_str());
+			ss.clear();
+			returnValue = FindIntersection(0, 0, 2, 2, 0, 5, 5, 0, result);
+			ss << "TestFind3: " << returnValue << " yields " << result.x << "," << result.y;
+			Con::printf(ss.str().c_str());
+		}*/
+		inline const CameraPosition CurrentRotation() { return mCurrentCameraRotation; }
+		void rotateCamera(CameraPosition newOrientation);
+		inline void rotateCameraRelative(int offset) {
+			switch(mCurrentCameraRotation) {
+				case CAMERA_NORTH: if(offset > 0) rotateCamera(CAMERA_EAST); else if(offset < 0) rotateCamera(CAMERA_WEST); break;
+				case CAMERA_EAST: if(offset > 0) rotateCamera(CAMERA_SOUTH); else if(offset < 0) rotateCamera(CAMERA_NORTH); break;
+				case CAMERA_SOUTH: if(offset > 0) rotateCamera(CAMERA_WEST); else if(offset < 0) rotateCamera(CAMERA_EAST); break;
+				case CAMERA_WEST: if(offset > 0) rotateCamera(CAMERA_NORTH); else if(offset < 0) rotateCamera(CAMERA_SOUTH); break;
+			}
+		}
+
+		inline bool FindIntersection(F32 oX1, F32 oY1, F32 oX2, F32 oY2, F32 dX1, F32 dY1, F32 dX2, F32 dY2, Point2D & result) {
+			F32 epsilon = (F32)0.0001;
+			F32 d = (oX1 - oX2) * (dY1 - dY2) - (oY1 - oY2) * (dX1 - dX2);
+			F32 absD = (d >= 0? d : -d);
+			if(absD < epsilon) return false;
+			F32 pre = oX1 * oY2 - oY1 * oX2;
+			F32 post = dX1 * dY2 - dY1 * dX2;
+			F32 x = (pre * (dX1 - dX2) - (oX1 - oX2) * post) / d;
+			F32 y = (pre * (dY1 - dY2) - (oY1 - oY2) * post) / d;
+			if (x < (min(oX1, oX2) - epsilon) || x > (max(oX1, oX2) + epsilon) || x < (min(dX1, dX2) - epsilon) || x > (max(dX1, dX2) + epsilon)) return false;
+			if (y < (min(oY1, oY2) - epsilon) || y > (max(oY1, oY2) + epsilon) || y < (min(dY1, dY2) - epsilon) || y > (max(dY1, dY2) + epsilon)) return false;
+			result.x = x;
+			result.y = y;
+			return true;
+		}
+		/*
+		inline void AddString(stringstream* ss, bool values[]) {
+			if(values[TILE_LEFT]) (*ss) << "Left=1";
+			else *ss << "Left=0";
+
+			if(values[TILE_RIGHT]) *ss << "Right=1";
+			else *ss << "Right=0";
+
+			if(values[TILE_UP]) *ss << "Up=1";
+			else *ss << "Up=0";
+
+			if(values[TILE_DOWN]) *ss << "Down=1";
+			else *ss << "Down=0";
+		}*/
+		inline bool canMoveBetweenTiles(Tile* from, Tile* to) {
+			S32 offsetX = to->mLogicalX - from->mLogicalX;
+			S32 offsetY = to->mLogicalY - from->mLogicalY;
+			return canMoveBetweenTiles(from, to, offsetX, offsetY);
+		}
+		inline bool canMoveBetweenTiles(Tile* from, Tile* to, S32 offsetX, S32 offsetY) {
+			if(offsetX > 0) {
+				if(from->mMovementRestrictions[TILE_RIGHT]) return false;
+				if(to->mMovementRestrictions[TILE_LEFT]) return false;
+			} else if(offsetX < 0) {
+				if(from->mMovementRestrictions[TILE_LEFT]) return false;
+				if(to->mMovementRestrictions[TILE_RIGHT]) return false;
+			}
+			
+			if(offsetY > 0) {
+				if(from->mMovementRestrictions[TILE_UP]) return false;
+				if(to->mMovementRestrictions[TILE_DOWN]) return false;
+			} else if(offsetY < 0) {
+				if(from->mMovementRestrictions[TILE_DOWN]) return false;
+				if(to->mMovementRestrictions[TILE_UP]) return false;
+			}
+			return true;
+		}
+
+
 		//void TileGrid::tryAStarAddNeighbor(priority_queue<Tile*, vector<Tile*>, TileDistanceCompare> openSet, Tile* from, Tile* goal, Tile* t);
 		inline bool TryToAddNeighbor(Tile* from, S32 offsetX, S32 offsetY, F32 curCostPast, Tile* goal, Tile* & to, F32 fixedCost) {
 			Tile* intermediateOne = 0;
 			Tile* intermediateTwo = 0;
 			if(!isValidLocation(from->mLogicalX + offsetX, from->mLogicalY + offsetY)) return false;
 			to = &mTiles[index(from->mLogicalX + offsetX, from->mLogicalY + offsetY)];
+			// First, check for movement restricted and return false if we hit one
+			//mMovementRestrictions: bool[4]; // 0 -> y+1, 1 -> x+1, 2 -> y-1, 3 -> x-1
+			if(!canMoveBetweenTiles(from, to, offsetX, offsetY)) return false;
+			
 			if(offsetX == 2) {
 				intermediateOne = &mTiles[index(from->mLogicalX + 1, from->mLogicalY)];
 				intermediateTwo = &mTiles[index(from->mLogicalX + 1, from->mLogicalY + offsetY)];
@@ -85,25 +183,28 @@ class TileGrid : public SimObject
 				intermediateOne = &mTiles[index(from->mLogicalX, from->mLogicalY - 1)];
 				intermediateTwo = &mTiles[index(from->mLogicalX + offsetX, from->mLogicalY - 1)];
 			}
-			F32 tentativeScore = curCostPast + from->actualDistance(to, fixedCost, intermediateOne, intermediateTwo);
+			F32 distance = from->actualDistance(to, fixedCost, intermediateOne, intermediateTwo);
+			F32 tentativeScore = curCostPast + distance;
 			if(tentativeScore < to->mCostPast) {
 				to->mCameFrom = from;
 				to->mCostPast = tentativeScore;
 				to->mCostFuture = tentativeScore + to->estimatedDistance(goal);
+				to->mCostMovePrev = distance;
 				return true;
 			}
 			return false;
 		}
 		//void tryAStarAddNeighbor(Tile* from, Tile* goal, Tile* t);
 		void tryDijkstras();
-		void tryAStar(Tile* origin, Tile* goal);
+		bool tryAStar(Tile* origin, Tile* goal);
 		
 		U32 mCenterX, mCenterY;
 		U32 mSizeX, mSizeY;
 		F32 mStrideX, mStrideY;
 		F32 mSpriteOffsetX, mSpriteOffsetY;
 
-		CompositeSprite* mCompositeSprite;
+		CompositeSprite* mBackgroundSprite;
+		CompositeSprite* mForegroundSprite;
 		SceneWindow* mSceneWindow;
 		Tile* mTiles;
 
@@ -111,10 +212,12 @@ class TileGrid : public SimObject
 		TileGrid(const U32 x, const U32 y);
 		~TileGrid(); 
 		
+		
 		void resizeGrid(const U32 x, const U32 y);
 		void setDisplayableSize(const U32 x, const U32 y);
 		void setDisplayCenter(const U32 x, const U32 y);
 		void setDisplayed(bool displayed);
+		void addWall(const U32 x, const U32 y, TileRelativePosition positionRelativeToTile, const char* assetID, const U32 frame, const char* logicalPositionArgs);
 		void setTile(const U32 x, const U32 y, const char* tileAssetID, const U32 frame, const char* logicalPositionArgs);
         void spinTile(const U32 x, const U32 y);
 		void updateTile(const U32 x, const U32 y, const char* tileAssetID, const U32 frame);
@@ -136,7 +239,7 @@ class TileGrid : public SimObject
 
 		inline bool isValidLocation(const U32 x, const U32 y) { return ((x >= 0) && (y >= 0) && (x < mSizeX) && (y < mSizeY) && ((x * y) <= maxIndex())); }
 
-		inline void getTileCenter(const U32 logicalX, const U32 logicalY, F32& worldX, F32& worldY) {
+		inline void getTileCenter(const U32 logicalX, const U32 logicalY, F32& worldX, F32& worldY) { // Could be negative, to account for walls
 			worldX = (F32)((logicalX + logicalY) * mStrideX);
 			worldY = (F32)(((S32)logicalY - (S32)logicalX + 0.5) * mStrideY);
 		}
@@ -144,8 +247,15 @@ class TileGrid : public SimObject
 		inline void setDefaultSpriteStride( const Vector2& defaultStride ) { 
 			mStrideX = defaultStride.x; 
 			mStrideY = defaultStride.y; 
-			if(mCompositeSprite) mCompositeSprite->setDefaultSpriteStride(defaultStride); 
+			// Trying to fix fence problem - one approach would have been this, plus double logical position args in script
+			//Vector2 newDefaultStride;
+			//newDefaultStride.x = defaultStride.x/2;
+			//newDefaultStride.y = defaultStride.y/2;
+			if(mBackgroundSprite) mBackgroundSprite->setDefaultSpriteStride(defaultStride); 
+			if(mForegroundSprite) mForegroundSprite->setDefaultSpriteStride(defaultStride);
 		}
+
+		inline F32 strideYFactor() { return (mStrideY / mStrideX); }
 
 		inline ActionPlan* recurrentPrependStep(const U32 fromX, const U32 fromY, const U32 toX, const U32 toY) {
 			if(fromX == toX && fromY == toY) return 0;
@@ -171,7 +281,7 @@ class TileGrid : public SimObject
 			ss << "Action plan = ";
 			for( ; current != 0; current = current->nextStep) {
 				Tile* t = getTile(current->x, current->y);
-				Vector2* position = t->mCenter;
+				Point2D* position = t->mCenter;
 				ss << "<Logical" << current->x << "," << current->y << " -> World" << position->x << "," << position->y << "> ";
 			}
 			Con::printf(ss.str().c_str());
@@ -180,14 +290,15 @@ class TileGrid : public SimObject
 
 		inline ActionPlan* getPathToTarget(const U32 fromX, const U32 fromY, const U32 toX, const U32 toY) {
 			if(!isValidLocation(toX, toY)) return 0;
-			tryAStar(&mTiles[index(fromX, fromY)], &mTiles[index(toX, toY)]);
+			if(!tryAStar(&mTiles[index(fromX, fromY)], &mTiles[index(toX, toY)])) return 0;
+			Tile* t = &mTiles[index(toX, toY)];
 			ActionPlan* next = new ActionPlan(toX, toY);
 			ActionPlan* head = next;
 
-			Tile* t = mTiles[index(toX, toY)].mCameFrom;
+			t = t->mCameFrom;
 			while(t != 0) {
 				if(t->mLogicalX == fromX && t->mLogicalY == fromY) break;
-				head = new ActionPlan(head, t->mLogicalX, t->mLogicalY);
+				head = new ActionPlan(head, t->mLogicalX, t->mLogicalY); 
 				t = t->mCameFrom;
 			}
 			/*
@@ -245,6 +356,30 @@ ConsoleMethod(TileGrid, updateWindowCenter, void, 2, 2, "Updates the center of t
 																	"@return No return value.") {
 		object->updateWindowCenter();
 }
+
+ConsoleMethod(TileGrid, addWall, void, 8, 8, "(Console text)") {
+//const U32 x, const U32 y, TileRelativePosition positionRelativeToTile, const char* assetID, const U32 frame, const char* logicalPositionArgs
+	U32 logicalX, logicalY;
+	U32 relativePositionIn;
+	TileRelativePosition relativePosition;
+	U32 frame;
+	logicalX = dAtoi(argv[2]);
+	logicalY = dAtoi(argv[3]);
+	relativePositionIn = dAtoi(argv[4]); // TILE_UP = 0, TILE_RIGHT = 1, TILE_DOWN = 2, TILE_LEFT = 3
+	relativePosition = TILE_UP;
+	switch(relativePositionIn) {
+		case 0: relativePosition = TILE_UP; break;
+		case 1: relativePosition = TILE_RIGHT; break;
+		case 2: relativePosition = TILE_DOWN; break; 
+		case 3: relativePosition = TILE_LEFT; break;
+	}
+	frame = dAtoi(argv[6]);
+	// LogicalX, LogicalY, RelPos, Asset, Frame, LogicalPositionArgs
+
+	object->addWall(logicalX, logicalY, relativePosition, argv[5], frame, argv[7]);
+}
+
+
 
 ConsoleMethod(TileGrid, initializeGridTile, void, 7, 7,  "(F32 strideX, [F32 strideY]]) - Sets the stride which scales the position at which sprites are created.\n"
                                                                     "@param tileX The x position of the new tile.\n"

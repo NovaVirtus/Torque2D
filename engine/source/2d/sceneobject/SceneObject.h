@@ -389,6 +389,7 @@ public:
 
     /// Move/Rotate to.
     bool                    moveTo( const Vector2& targetWorldPoint, const F32 speed, const bool autoStop = true, const bool warpToTarget = true,  const F32 yScaling = 1 );
+	bool                    moveTo( U32 & arrivalTime, const Vector2& targetWorldPoint, const F32 speed, const bool autoStop = true, const bool warpToTarget = true,  const F32 yScaling = 1 );
     bool                    rotateTo( const F32 targetAngle, const F32 speed, const bool autoStop = true, const bool warpToTarget = true );
     void                    cancelMoveTo( const bool autoStop = true );
     void                    cancelRotateTo( const bool autoStop = true );

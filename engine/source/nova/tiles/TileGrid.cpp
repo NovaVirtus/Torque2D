@@ -50,7 +50,8 @@ private:
   Vertex m_goal;
 };*/
 
-void TileGrid::tryAStar(Tile* origin, Tile* goal) {
+bool TileGrid::tryAStar(Tile* origin, Tile* goal) {
+	//TestFindIntersection();
 	std::priority_queue<Tile*, vector<Tile*>, TileDistanceCompare> openSet;
 	Tile* current;
 	Tile* neighbor;
@@ -69,7 +70,7 @@ void TileGrid::tryAStar(Tile* origin, Tile* goal) {
 		openSet.pop();
 		if(current->mInClosedSet) continue;
 
-		if(current == goal) break;
+		if(current == goal) return true;
 
 		current->mInClosedSet = true;
 		currentCostPast = current->mCostPast;
@@ -82,12 +83,12 @@ void TileGrid::tryAStar(Tile* origin, Tile* goal) {
 			if(baseY < mSizeY) if(TryToAddNeighbor(current, -1, 1, currentCostPast, goal, neighbor, SQRT2)) openSet.push(neighbor);
 
 			// Knight's Moves - Left Secondary
-			if(baseY > 1) if(TryToAddNeighbor(current, -1, -2, currentCostPast, goal, neighbor, SQRT5)) openSet.push(neighbor);
-			if(baseY + 1 < mSizeY && (baseX - 1) * (baseY + 2) <= maxIndex()) if(TryToAddNeighbor(current, -1, 2, currentCostPast, goal, neighbor, SQRT5)) openSet.push(neighbor);
+			//if(baseY > 1) if(TryToAddNeighbor(current, -1, -2, currentCostPast, goal, neighbor, SQRT5)) openSet.push(neighbor);
+			//if(baseY + 1 < mSizeY && (baseX - 1) * (baseY + 2) <= maxIndex()) if(TryToAddNeighbor(current, -1, 2, currentCostPast, goal, neighbor, SQRT5)) openSet.push(neighbor);
 
 			if(baseX > 1) { // Knight's Moves - Left Primary
-				if(baseY > 0) if(TryToAddNeighbor(current, -2, -1, currentCostPast, goal, neighbor, SQRT5)) openSet.push(neighbor);
-				if(baseY < mSizeY) if(TryToAddNeighbor(current, -2, 1, currentCostPast, goal, neighbor, SQRT5)) openSet.push(neighbor);
+				//if(baseY > 0) if(TryToAddNeighbor(current, -2, -1, currentCostPast, goal, neighbor, SQRT5)) openSet.push(neighbor);
+				//if(baseY < mSizeY) if(TryToAddNeighbor(current, -2, 1, currentCostPast, goal, neighbor, SQRT5)) openSet.push(neighbor);
 			}
 		}
 		// Up/down
@@ -99,15 +100,16 @@ void TileGrid::tryAStar(Tile* origin, Tile* goal) {
 			if(baseY < mSizeY && (baseX + 1) * (baseY + 1) <= maxIndex()) if(TryToAddNeighbor(current, 1, 1, currentCostPast, goal, neighbor, SQRT2)) openSet.push(neighbor);
 
 			// Knight's Moves - Right Secondary
-			if(baseY > 1) if(TryToAddNeighbor(current, 1, -2, currentCostPast, goal, neighbor, SQRT5)) openSet.push(neighbor);
-			if(baseY + 1 < mSizeY && (baseX + 1) * (baseY + 2) <= maxIndex()) if(TryToAddNeighbor(current, 1, 2, currentCostPast, goal, neighbor, SQRT5)) openSet.push(neighbor);
+			//if(baseY > 1) if(TryToAddNeighbor(current, 1, -2, currentCostPast, goal, neighbor, SQRT5)) openSet.push(neighbor);
+			//if(baseY + 1 < mSizeY && (baseX + 1) * (baseY + 2) <= maxIndex()) if(TryToAddNeighbor(current, 1, 2, currentCostPast, goal, neighbor, SQRT5)) openSet.push(neighbor);
 
 			if(baseX + 1 < mSizeX) { // Knight's Moves - Right Primary
-				if(baseY > 0 && (baseX + 2) * (baseY - 1) <= maxIndex()) if(TryToAddNeighbor(current, 2, -1, currentCostPast, goal, neighbor, SQRT5)) openSet.push(neighbor);
-				if(baseY < mSizeY && (baseX + 2) * (baseY + 1) <= maxIndex()) if(TryToAddNeighbor(current, 2, 1, currentCostPast, goal, neighbor, SQRT5)) openSet.push(neighbor);
+				//if(baseY > 0 && (baseX + 2) * (baseY - 1) <= maxIndex()) if(TryToAddNeighbor(current, 2, -1, currentCostPast, goal, neighbor, SQRT5)) openSet.push(neighbor);
+				//if(baseY < mSizeY && (baseX + 2) * (baseY + 1) <= maxIndex()) if(TryToAddNeighbor(current, 2, 1, currentCostPast, goal, neighbor, SQRT5)) openSet.push(neighbor);
 			}
 		}
 	}
+	return false;
 	//std::priority_queue<Tile*, 
 	//std::priority_queue<Tile*, 
 	/*
@@ -160,6 +162,9 @@ TileGrid::TileGrid() {
 	mStrideY = 1;
 	mSpriteOffsetX = 0;
 	mSpriteOffsetY = 0;
+
+	mDebugSavedX = 0;
+	mDebugSavedY = 0;
 }
 TileGrid::TileGrid(const U32 x, const U32 y) {  
 	mDisplayed = false;
@@ -192,6 +197,29 @@ TileGrid::~TileGrid() {
 	delete mTiles;
 }
 
+void TileGrid::addWall(const U32 x, const U32 y, TileRelativePosition positionRelativeToTile, const char* assetID, const U32 frame, const char* logicalPositionArgs) {
+	//void initializeWall(const char* assetID, const U32 frame, Point2D* center, const char* logicalPosition, Tile* tileOne, TileRelativePosition positionRelativeToTileOne, Tile* tileTwo);
+	if(!isValidLocation(x,y)) return;
+	Wall* newWall = new Wall();
+	Point2D* center = new Point2D();
+	F32 centerX, centerY;
+
+	U32 secondX = x + (positionRelativeToTile == TILE_LEFT ? -1 : positionRelativeToTile == TILE_RIGHT ? +1 : 0);
+	U32 secondY = y + (positionRelativeToTile == TILE_DOWN ? -1 : positionRelativeToTile == TILE_UP ? +1 : 0);
+
+	//if(positionRelativeToTile == TILE_LEFT || positionRelativeToTile == TILE_UP) {
+	getTileCenter(x, y, centerX, centerY);
+	//} else {
+	//	getTileCenter(secondX, secondY, centerX, centerY);
+	//}
+	center->x = centerX;
+	center->y = centerY;
+	Tile* tileOne = getTile(x, y);
+	Tile* tileTwo = (isValidLocation(secondX, secondY) ? getTile(secondX, secondY) : 0);
+
+	newWall->initializeWall(assetID, frame, center, logicalPositionArgs, tileOne, positionRelativeToTile, tileTwo, mForegroundSprite);
+}
+
 void TileGrid::setTile(const U32 x, const U32 y, const char* tileAssetID, const U32 frame, const char* logicalPositionArgs) {
 	Vector2 center;
 	getTileCenter(x, y, center.x, center.y);
@@ -200,13 +228,13 @@ void TileGrid::setTile(const U32 x, const U32 y, const char* tileAssetID, const 
 
 void TileGrid::updateTile(const U32 x, const U32 y, const char* tileAssetID, const U32 frame) {
 	if(x < 0 || y < 0 || x > mSizeX || y > mSizeY || (x*y) > maxIndex()) return;
-	mTiles[index(x,y)].updateTile(tileAssetID, frame, mCompositeSprite);
+	mTiles[index(x,y)].updateTile(tileAssetID, frame);
 }
 
 void TileGrid::spinTile(const U32 x, const U32 y) {
 	//tryAStar();
 	if(x < 0 || y < 0 || x > mSizeX || y > mSizeY || (x*y) > maxIndex()) return;
-	mTiles[index(x,y)].spinTile(mCompositeSprite);
+	mTiles[index(x,y)].spinTile();
 }
 
 void TileGrid::setDisplayableSize(const U32 x, const U32 y) {
@@ -453,12 +481,43 @@ bool TileGrid::getLogicalCoordinates(const F32 worldX, const F32 worldY, U32& lo
 	}
 }
 
+void TileGrid::rotateCamera(CameraPosition newOrientation) {
+	CameraPosition oldOrientation = mCurrentCameraRotation;
+	switch(newOrientation) {
+		case CAMERA_NORTH: 
+			mBackgroundSprite->setSpriteFlipX = false;
+			mBackgroundSprite->setSpriteFlipY = false;
+			mForegroundSprite->setSpriteFlipX = false;
+			mForegroundSprite->setSpriteFlipY = false;
+			break;
+		case CAMERA_EAST:
+			mBackgroundSprite->setSpriteFlipX = false;
+			mBackgroundSprite->setSpriteFlipY = true;
+			mForegroundSprite->setSpriteFlipX = false;
+			mForegroundSprite->setSpriteFlipY = true;
+			break;
+		case CAMERA_SOUTH:
+			mBackgroundSprite->setSpriteFlipX = true;
+			mBackgroundSprite->setSpriteFlipY = true;
+			mForegroundSprite->setSpriteFlipX = true;
+			mForegroundSprite->setSpriteFlipY = true;
+			break;
+		case CAMERA_WEST:
+			mBackgroundSprite->setSpriteFlipX = true;
+			mBackgroundSprite->setSpriteFlipY = false;
+			mForegroundSprite->setSpriteFlipX = true;
+			mForegroundSprite->setSpriteFlipY = false;
+			break;
+	}
+}
+
 void TileGrid::initPersistFields() {  
     // Call parent.  
     Parent::initPersistFields();  
 	
 	addField("SceneWindow",TypeSimObjectPtr, Offset(mSceneWindow, TileGrid), "Scene window viewing this tile grid.");
-	addField("CompositeSprite",TypeSimObjectPtr, Offset(mCompositeSprite, TileGrid), "Composite sprite to use for this tile grid.");
+	addField("CompositeSprite",TypeSimObjectPtr, Offset(mBackgroundSprite, TileGrid), "Composite sprite to use for this tile grid.");
+	addField("ForegroundSprite",TypeSimObjectPtr, Offset(mForegroundSprite, TileGrid), "Composite sprite to use for this tile grid.");
     // Add my fields here.  
    //addField("EmitLight", TypeBool, Offset(mEmitLight, TileGrid), "Flags whether the light is on or off.");  
     //addField("Brightness", TypeF32, Offset(mBrightness, TileGrid), "Sets the brightness of the light.");   

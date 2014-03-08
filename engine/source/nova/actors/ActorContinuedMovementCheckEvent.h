@@ -31,20 +31,21 @@
 
 class ActorContinuedMovementCheckEvent : public SimEvent {
 private:
-	U32 mLogicalX;
-	U32 mLogicalY;
+	//U32 mLogicalX;
+	//U32 mLogicalY;
 	U32 mTimeUntilArrive;
 public:
-	ActorContinuedMovementCheckEvent(const U32 logicalX, const U32 logicalY, const U32 timeUntilArrive) {
-		mLogicalX = logicalX;
-		mLogicalY = logicalY;
+	ActorContinuedMovementCheckEvent(const U32 timeUntilArrive) {//const U32 logicalX, const U32 logicalY, const U32 timeUntilArrive) {
+		//mLogicalX = logicalX;
+		//mLogicalY = logicalY;
 		mTimeUntilArrive = timeUntilArrive;
 	}
     virtual ~ActorContinuedMovementCheckEvent() {}
 
     virtual void process(SimObject *object) {
 		Actor* curActor = (Actor*) object;
-		curActor->advanceActionPlan(mLogicalX, mLogicalY, mTimeUntilArrive);
+		//Con::printf("Continued movement check fired");
+		curActor->advanceActionPlan(mTimeUntilArrive);
 		/*
 		if(!(curActor->advanceActionPlan(mLogicalX, mLogicalY, mTimeUntilArrive))) {
 			curActor->setArrivingIn(mLogicalX, mLogicalY, mTimeUntilArrive);

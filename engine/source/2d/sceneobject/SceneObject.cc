@@ -1632,7 +1632,74 @@ bool SceneObject::moveTo( const Vector2& targetWorldPoint, const F32 speed, cons
 
 		// Create and post event.
 		SceneObjectMoveToEvent* pEvent = new SceneObjectMoveToEvent( targetWorldPoint, autoStop, warpToTarget );
+		U32 returnTime = Sim::getCurrentTime() + time;
 		mMoveToEventId = Sim::postEvent(this, pEvent, Sim::getCurrentTime() + time );
+	}
+
+    return true;
+}
+
+bool SceneObject::moveTo( U32 & arrivalTime, const Vector2& targetWorldPoint, const F32 speed, const bool autoStop, const bool warpToTarget, const F32 yScaling )
+{
+    // Check in a scene.
+    if ( !getScene() )
+    {
+        Con::warnf("SceneObject::moveTo() - Cannot move object (%d) to a point as it is not in a scene.", getId() );
+        return false;
+    }
+
+    // Check not a static body.
+    if ( getBodyType() == b2_staticBody )
+    {
+        Con::warnf("SceneObject::moveTo() - Cannot move object (%d) to a point as it is a static body.", getId() );
+        return false;
+    }
+
+    // Check speed.
+    if ( speed <= 0.0f )
+    {
+        Con::warnf("SceneObject::moveTo() - Speed '%f' is invalid.", speed );
+        return false;
+    }
+
+    // Cancel any previous event.
+    if ( mMoveToEventId != 0 )
+    {
+        Sim::cancelEvent( mMoveToEventId );
+        mMoveToEventId = 0;
+    }
+
+    // Calculate the linear velocity for the specified speed.
+    Vector2 linearVelocity = targetWorldPoint - getPosition();
+	
+	if(yScaling == 1) {
+		const F32 distance = linearVelocity.Normalize( speed );
+
+		// Calculate the time it will take to reach the target.
+		const U32 time = (U32)((distance / speed) * 1000.0f);
+
+		// Set the linear velocity.
+		setLinearVelocity( linearVelocity );
+
+		// Create and post event.
+		SceneObjectMoveToEvent* pEvent = new SceneObjectMoveToEvent( targetWorldPoint, autoStop, warpToTarget );
+		mMoveToEventId = Sim::postEvent(this, pEvent, Sim::getCurrentTime() + time );
+	} else { //*NCP 1/2014
+		
+		linearVelocity.y /= yScaling;
+		const F32 distance = linearVelocity.Normalize( speed );
+
+		// Calculate the time it will take to reach the target.
+		const U32 time = (U32)((distance / speed) * 1000.0f);
+
+		// Set the linear velocity.
+		linearVelocity.y *= yScaling;
+		setLinearVelocity( linearVelocity );
+
+		// Create and post event.
+		SceneObjectMoveToEvent* pEvent = new SceneObjectMoveToEvent( targetWorldPoint, autoStop, warpToTarget );
+		arrivalTime = time;
+		mMoveToEventId = Sim::postEvent(this, pEvent, arrivalTime + Sim::getCurrentTime());
 	}
 
     return true;

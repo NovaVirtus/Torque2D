@@ -43,6 +43,7 @@ public:
 
     virtual void process(SimObject *object) {
 		Actor* curActor = (Actor*) object;
+		//Con::printf("Arrived event fired");
 		curActor->arrivedAtDestination(mLogicalX, mLogicalY);
     }
 

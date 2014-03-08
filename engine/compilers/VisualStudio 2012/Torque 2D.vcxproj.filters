@@ -112,9 +112,6 @@
     <Filter Include="memory">
       <UniqueIdentifier>{5c7d23f1-7194-4a6f-8bd3-fd5b6a0beb4f}</UniqueIdentifier>
     </Filter>
-    <Filter Include="messaging">
-      <UniqueIdentifier>{66757e8b-c204-4b92-92ab-19278019d17d}</UniqueIdentifier>
-    </Filter>
     <Filter Include="module">
       <UniqueIdentifier>{23024162-0d6f-4259-8dac-a3a621d55065}</UniqueIdentifier>
     </Filter>
@@ -186,6 +183,12 @@
     </Filter>
     <Filter Include="nova\tiles">
       <UniqueIdentifier>{7e317bc4-c3bc-4c00-82b9-81e99be1a30c}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="nova\statics">
+      <UniqueIdentifier>{551f39a0-3891-472f-8da6-8997214cbcbd}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="module\messaging">
+      <UniqueIdentifier>{66757e8b-c204-4b92-92ab-19278019d17d}</UniqueIdentifier>
     </Filter>
   </ItemGroup>
   <ItemGroup>
@@ -757,19 +760,19 @@
       <Filter>graphics</Filter>
     </ClCompile>
     <ClCompile Include="..\..\source\messaging\dispatcher.cc">
-      <Filter>messaging</Filter>
+      <Filter>module\messaging</Filter>
     </ClCompile>
     <ClCompile Include="..\..\source\messaging\eventManager.cc">
-      <Filter>messaging</Filter>
+      <Filter>module\messaging</Filter>
     </ClCompile>
     <ClCompile Include="..\..\source\messaging\message.cc">
-      <Filter>messaging</Filter>
+      <Filter>module\messaging</Filter>
     </ClCompile>
     <ClCompile Include="..\..\source\messaging\messageForwarder.cc">
-      <Filter>messaging</Filter>
+      <Filter>module\messaging</Filter>
     </ClCompile>
     <ClCompile Include="..\..\source\messaging\scriptMsgListener.cc">
-      <Filter>messaging</Filter>
+      <Filter>module\messaging</Filter>
     </ClCompile>
     <ClCompile Include="..\..\source\game\defaultGame.cc">
       <Filter>game</Filter>
@@ -1322,6 +1325,9 @@
     </ClCompile>
     <ClCompile Include="..\..\source\nova\tiles\TileGrid.cpp">
       <Filter>nova\tiles</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\source\nova\statics\Wall.cpp">
+      <Filter>nova\statics</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
@@ -1956,19 +1962,19 @@
       <Filter>graphics</Filter>
     </ClInclude>
     <ClInclude Include="..\..\source\messaging\dispatcher.h">
-      <Filter>messaging</Filter>
+      <Filter>module\messaging</Filter>
     </ClInclude>
     <ClInclude Include="..\..\source\messaging\eventManager.h">
-      <Filter>messaging</Filter>
+      <Filter>module\messaging</Filter>
     </ClInclude>
     <ClInclude Include="..\..\source\messaging\message.h">
-      <Filter>messaging</Filter>
+      <Filter>module\messaging</Filter>
     </ClInclude>
     <ClInclude Include="..\..\source\messaging\messageForwarder.h">
-      <Filter>messaging</Filter>
+      <Filter>module\messaging</Filter>
     </ClInclude>
     <ClInclude Include="..\..\source\messaging\scriptMsgListener.h">
-      <Filter>messaging</Filter>
+      <Filter>module\messaging</Filter>
     </ClInclude>
     <ClInclude Include="..\..\source\game\defaultGame.h">
       <Filter>game</Filter>
@@ -2708,6 +2714,9 @@
     </ClInclude>
     <ClInclude Include="..\..\source\nova\actors\ActionPlan.h">
       <Filter>nova\actors</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\source\nova\statics\Wall.h">
+      <Filter>nova\statics</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

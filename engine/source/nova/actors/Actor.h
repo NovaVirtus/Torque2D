@@ -34,7 +34,8 @@ class Actor : public SimObject
 		U32 mTargetX, mTargetY;
 
 		TileGrid* mTileGrid;
-		ActionPlan* nextStep;
+		ActionPlan* mNextStep;
+		SpriteMovementPlan* mNextSpriteStep;
 		SceneWindow* mSceneWindow;
 		
 		bool advanceOverrideMoveFlag;
@@ -42,20 +43,88 @@ class Actor : public SimObject
 		U32 mArrivedEventID, mContinueMoveCheckEventID;
 		U32 mLogicalX, mLogicalY;
 		U32 mSpriteID;
-		
+		U32 mFrame;
+
 		F32 mSpeed;
-		
+		F32 mDepth;
+
 		void addToWindow(const U32 logicalX, const U32 logicalY);
 		void setArrivingIn(U32 destinationX, U32 destinationY, U32 simTicksRemaining);
 		void setSprite(const char* assetID, const U32 frame, const F32 sizeX, const F32 sizeY);
 		
-		bool advanceActionPlan(U32 curDestinationX, U32 curDestinationY, U32 timeUntilArrive);
+		bool advanceSpriteMovePlan();
+		bool advanceActionPlan(U32 timeUntilArrive);
+
 		bool moveToPosition(const U32 logicalX, const U32 logicalY);
 		
-		
-		inline void recenterInCurrentTile() {  moveToPosition(mLogicalX, mLogicalY); }
+		bool findCrossingPoints(Point2D* currentTileCenter, const F32 strideX, const F32 strideY, const S32 logicalOffsetX, const S32 logicalOffsetY, Point2D* currentPosition, Point2D* targetPosition, bool & crossingX, Point2D & intersectionX, bool & crossingY, Point2D & intersectionY);
+			
+		inline F64 DistanceBetween(F64 x1, F64 y1, F64 x2, F64 y2) {
+			F64 x = (x1 - x2);
+			x = x * x;
+			F64 y = (y1 - y2);
+			y = y * y;
+			return sqrt(x + y);
+		}
 
-		inline void popActionPlan() { ActionPlan* old = nextStep; nextStep = nextStep->nextStep; delete old; }
+		// Now that I can find intersections,
+		// 1) Check which lines that we'll be crossing (x, y)
+		// 2) For each of these, find the intersection point
+		// 3) Check if crossing and Y boundary within epsilon distance of each other and if so roll them up into one diagonal crossing
+		// 4) Find the distance to this point, calculate time it will take to move there and move at current speed to that point
+		// 5) Schedule event at that point to move to next
+		/*inline void TestFindIntersection() {
+			Point2D result;
+			bool returnValue;
+			/*stringstream ss;
+			returnValue = FindIntersection(0, 0, 5, 0, 3, -10, 3, 10, result);
+			ss << "TestFind1: " << returnValue << " yields " << result.x << "," << result.y;
+			Con::printf(ss.str().c_str());
+			ss.clear();
+			returnValue = FindIntersection(0, 0, 0, 5, -5, 3, 5, 3, result);
+			/*ss << "TestFind2: " << returnValue << " yields " << result.x << "," << result.y;
+			Con::printf(ss.str().c_str());
+			ss.clear();
+			returnValue = FindIntersection(0, 0, 2, 2, 0, 5, 5, 0, result);
+			/*ss << "TestFind3: " << returnValue << " yields " << result.x << "," << result.y;
+			Con::printf(ss.str().c_str());
+		}*/
+
+		inline bool FindIntersection(F64 oX1, F64 oY1, F64 oX2, F64 oY2, F64 dX1, F64 dY1, F64 dX2, F64 dY2, Point2D & result) {
+			F64 epsilon = (F64)0.0001;
+			F64 d = (oX1 - oX2) * (dY1 - dY2) - (oY1 - oY2) * (dX1 - dX2);
+			F64 absD = (d >= 0? d : -d);
+			if(absD < epsilon) return false;
+			F64 pre = oX1 * oY2 - oY1 * oX2;
+			F64 post = dX1 * dY2 - dY1 * dX2;
+			F64 x = (pre * (dX1 - dX2) - (oX1 - oX2) * post) / d;
+			F64 y = (pre * (dY1 - dY2) - (oY1 - oY2) * post) / d;
+			if (x < (min(oX1, oX2) - epsilon) || x > (max(oX1, oX2) + epsilon) || x < (min(dX1, dX2) - epsilon) || x > (max(dX1, dX2) + epsilon)) return false;
+			if (y < (min(oY1, oY2) - epsilon) || y > (max(oY1, oY2) + epsilon) || y < (min(dY1, dY2) - epsilon) || y > (max(dY1, dY2) + epsilon)) return false;
+			result.x = x;
+			result.y = y;
+			return true;
+		}
+
+		inline U32 getFrameForOffset(S32 logicalOffsetX, S32 logicalOffsetY) {
+			if(logicalOffsetY < 0) {
+				if(logicalOffsetX > 0) return 0;
+				else if(logicalOffsetX == 0) return 1;
+				return 2;
+			} else if(logicalOffsetY > 0) {
+				if(logicalOffsetX < 0) return 4;
+				else if(logicalOffsetX == 0) return 5;
+				else return 6;
+			} else {
+				if(logicalOffsetX < 0) return 3;
+				else return 7; // "If offsetX > 0", but we need to have either offsetX or offsetY != 0...
+			}
+		}
+
+		inline void recenterInCurrentTile() { moveToPosition(mLogicalX, mLogicalY); }//, mLogicalX, 1 + mTileGrid->getTile(mLogicalX, mLogicalY)->mExtraMovementCost); }
+
+		inline void popActionPlan() { ActionPlan* old = mNextStep; mNextStep = mNextStep->nextStep; delete old; }
+		inline void popSpritePlan() { SpriteMovementPlan* old = mNextSpriteStep; mNextSpriteStep = mNextSpriteStep->nextStep; delete old; }
 
 		inline void cancelEvent(U32& eventHandle) {
 			if(!eventHandle) return;
@@ -67,10 +136,10 @@ class Actor : public SimObject
 			mHasTarget = false;
 			mTargetX = 0;
 			mTargetY = 0;
-			//if(nextStep == 0) return;
+			//if(mNextStep == 0) return;
 			if(mArrivedEventID != 0) cancelEvent(mArrivedEventID);
 			if(mContinueMoveCheckEventID != 0) cancelEvent(mContinueMoveCheckEventID);
-			if(nextStep != 0) deleteActionPlan(nextStep);
+			if(mNextStep != 0) deleteActionPlan(mNextStep);
 			// Optional: recent in current tile?
 		}
 
@@ -81,7 +150,7 @@ class Actor : public SimObject
 		}
 
 		inline bool startRelativeMove(const int relativeX, const int relativeY) {
-			//if(nextStep) return false;
+			//if(mNextStep) return false;
 			U32 toX, toY;
 
 			if(mTileGrid->getRelativeMove(mLogicalX, mLogicalY, relativeX, relativeY, toX, toY)) {
@@ -101,13 +170,15 @@ class Actor : public SimObject
 		}
 		
 		inline bool startAbsoluteMove(const U32 toX, const U32 toY) {
+			//Con::printf("Trying to start absolute move");
 			if(mHasTarget && (mTargetX == toX && mTargetY == toY)) return true; // Maybe should be false...
 			cancelCurrentMove();
 			ActionPlan* newPlan = mTileGrid->getPathToTarget(mLogicalX, mLogicalY, toX, toY);
 			if(!newPlan) {
 				return false; // No path possible
 			}
-			nextStep = newPlan;
+			//Con::printf("Trying to start absolute move2");
+			mNextStep = newPlan;
 			mHasTarget = true;
 			mTargetX = toX;
 			mTargetY = toY;
@@ -148,9 +219,10 @@ class Actor : public SimObject
 		}
 		
 		inline void arrivedAtDestination(U32 destinationX, U32 destinationY) {
-			deleteActionPlan(nextStep);
+			deleteActionPlan(mNextStep);
 			mLogicalX = destinationX;
 			mLogicalY = destinationY;
+			mHasTarget = false;
 			Con::executef(this, 2, "onArrived");
 			debugActionPlan();
 		}
@@ -166,17 +238,32 @@ class Actor : public SimObject
 
 		inline void debugActionPlan() {
 			ActionPlan* current;
-			for(current = nextStep; current != 0; current = current->nextStep) {
+			for(current = mNextStep; current != 0; current = current->nextStep) {
 				Tile* t = mTileGrid->getTile(current->x, current->y);
-				Vector2* position = t->mCenter;
+				Point2D* position = t->mCenter;
 			}
 		}
 	
 		inline void startActionPlan(ActionPlan* plan) {
-			// deleteActionPlan(nextStep); Should never have to delete...
-			nextStep = plan;
-			moveToPosition(nextStep->x, nextStep->y);
+			// deleteActionPlan(mNextStep); Should never have to delete...
+			//Con::printf("Starting action plan");
+			mNextStep = plan;
+			moveToPosition(mNextStep->x, mNextStep->y);//, nextStep->speedDivisor);
 			debugActionPlan();
+		}
+
+		inline void restartPathToTarget() {
+			ActionPlan* current = 0;
+			U32 toX, toY;
+			for(current = mNextStep; ((current != 0) && (current->nextStep != 0)); current = current->nextStep) {
+				// Do nothing, currently
+			}
+			if(current == 0) return;
+			toX = current->x;
+			toY = current->y;
+
+			cancelCurrentMove();
+			startAbsoluteMove(toX, toY);
 		}
 
 		DECLARE_CONOBJECT( Actor );  
@@ -188,7 +275,7 @@ class Actor : public SimObject
 																	"@param logicalY The Y coordinate.\n"
 																	"@return No return value.") {
 			
-			if(object->nextStep != 0) {
+			if(object->mNextStep != 0) {
 				return object->overrideCurrentMoveRelative(dAtoi(argv[2]), dAtoi(argv[3]));
 			} else {
 				return object->startRelativeMove(dAtoi(argv[2]), dAtoi(argv[3]));
@@ -209,8 +296,8 @@ class Actor : public SimObject
 				
 				//object->mTileGrid->spinTile(logicalX, logicalY);
 
-				//if(object->nextStep) return false; 
-				if(object->nextStep) return object->overrideCurrentMoveAbsolute(logicalX, logicalY);
+				//if(object->mNextStep) return false; 
+				if(object->mNextStep) return object->overrideCurrentMoveAbsolute(logicalX, logicalY);
 				else return object->startAbsoluteMove(logicalX, logicalY);
 			} else {
 				return false; // No path possible
@@ -221,7 +308,8 @@ class Actor : public SimObject
 																	"@param logicalX The X coordinate.\n"
 																	"@param logicalY The Y coordinate.\n"
 																	"@return No return value.") {
-			if(object->nextStep) {
+			//Con::printf("Trying to move to abs position");
+																		if(object->mNextStep) {
 				return object->overrideCurrentMoveAbsolute(dAtoi(argv[2]), dAtoi(argv[3]));
 			} else {
 				return object->startAbsoluteMove(dAtoi(argv[2]), dAtoi(argv[3]));
