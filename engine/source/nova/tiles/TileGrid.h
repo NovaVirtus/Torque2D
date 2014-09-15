@@ -8,6 +8,7 @@
 #ifndef _TILE_GRID_H_
 #define _TILE_GRID_H_
 
+#include "../statics/BorderObject.h"
 #include <string>
 #include <sstream>
 #include "../actors/ActionPlan.h"
@@ -43,6 +44,9 @@ class TileGrid : public SimObject
 
 			U32 mMaxDisplayedX;
 			U32 mMaxDisplayedY;
+
+			bool mFlipX;
+			bool mFlipY;
 		
 			inline U32 constrainU32ToRange(U32 number, S32 offsetValue, U32 min, U32 max) {
 				U32 working;
@@ -64,10 +68,10 @@ class TileGrid : public SimObject
 				for(U32 y=minRow; y <= maxRow; y++) mTiles[index(x,y)].removeFromSpriteBatch();
 			}
 			inline void addRow(const U32 y, const U32 minCol, const U32 maxCol) {
-				for(U32 x=minCol; x <= maxCol; x++) mTiles[index(x,y)].addToSpriteBatch(mBackgroundSprite, mForegroundSprite);
+				for(U32 x=minCol; x <= maxCol; x++) mTiles[index(x,y)].addToSpriteBatch(mBackgroundSprite, mForegroundSprite, mFlipX, mFlipY);
 			}
 			inline void addColumn(const U32 x, const U32 minRow, const U32 maxRow) {
-				for(U32 y=minRow; y <= maxRow; y++) mTiles[index(x,y)].addToSpriteBatch(mBackgroundSprite, mForegroundSprite);
+				for(U32 y=minRow; y <= maxRow; y++) mTiles[index(x,y)].addToSpriteBatch(mBackgroundSprite, mForegroundSprite, mFlipX, mFlipY);
 			}
 		
 	protected:
@@ -161,11 +165,16 @@ class TileGrid : public SimObject
 
 
 		//void TileGrid::tryAStarAddNeighbor(priority_queue<Tile*, vector<Tile*>, TileDistanceCompare> openSet, Tile* from, Tile* goal, Tile* t);
-		inline bool TryToAddNeighbor(Tile* from, S32 offsetX, S32 offsetY, F32 curCostPast, Tile* goal, Tile* & to, F32 fixedCost) {
+		inline bool TryToAddNeighbor(Tile* from, S32 offsetX, S32 offsetY, F32 curCostPast, Tile* goal, Tile* & to, F32 fixedCost, bool checkLock) {
 			Tile* intermediateOne = 0;
 			Tile* intermediateTwo = 0;
 			if(!isValidLocation(from->mLogicalX + offsetX, from->mLogicalY + offsetY)) return false;
 			to = &mTiles[index(from->mLogicalX + offsetX, from->mLogicalY + offsetY)];
+
+			if(checkLock) {
+				if(to->isLocked()) return false;
+			}
+
 			// First, check for movement restricted and return false if we hit one
 			//mMovementRestrictions: bool[4]; // 0 -> y+1, 1 -> x+1, 2 -> y-1, 3 -> x-1
 			if(!canMoveBetweenTiles(from, to, offsetX, offsetY)) return false;
@@ -183,7 +192,7 @@ class TileGrid : public SimObject
 				intermediateOne = &mTiles[index(from->mLogicalX, from->mLogicalY - 1)];
 				intermediateTwo = &mTiles[index(from->mLogicalX + offsetX, from->mLogicalY - 1)];
 			}
-			F32 distance = from->actualDistance(to, fixedCost, intermediateOne, intermediateTwo);
+			F32 distance = from->actualDistance(to, fixedCost);//, intermediateOne, intermediateTwo);
 			F32 tentativeScore = curCostPast + distance;
 			if(tentativeScore < to->mCostPast) {
 				to->mCameFrom = from;
@@ -217,7 +226,7 @@ class TileGrid : public SimObject
 		void setDisplayableSize(const U32 x, const U32 y);
 		void setDisplayCenter(const U32 x, const U32 y);
 		void setDisplayed(bool displayed);
-		void addWall(const U32 x, const U32 y, TileRelativePosition positionRelativeToTile, const char* assetID, const U32 frame, const char* logicalPositionArgs);
+		void addBorderObject(const U32 x, const U32 y, TileRelativePosition positionRelativeToTile, const char* assetID, const U32 frame, const char* logicalPositionArgs, bool blocksMovement, F32 extraMovementCost);
 		void setTile(const U32 x, const U32 y, const char* tileAssetID, const U32 frame, const char* logicalPositionArgs);
         void spinTile(const U32 x, const U32 y);
 		void updateTile(const U32 x, const U32 y, const char* tileAssetID, const U32 frame);
@@ -324,6 +333,19 @@ class TileGrid : public SimObject
         DECLARE_CONOBJECT( TileGrid );  
     };  
 
+ConsoleMethod(TileGrid, printActualCost, void, 6, 6, "Display the distance between two specified tiles.") {
+
+	Tile* from = object->getTile(dAtoi(argv[2]), dAtoi(argv[3]));
+	Tile* to = object->getTile(dAtoi(argv[4]), dAtoi(argv[5]));
+	F32 distance = 1;
+	S32 offsetX = (S32)(to->mLogicalX) - (S32)(from->mLogicalX);
+	S32 offsetY = (S32)(to->mLogicalY) - (S32)(from->mLogicalY);
+	if(offsetX != 0 && offsetY != 0) distance = (F32)1.414214;
+	stringstream ss;
+	ss << "Actual distance between " << from->mLogicalX << "," << from->mLogicalY << " and " << to->mLogicalX << "," << to->mLogicalY << " = ";
+	ss << from->actualDistance(to, distance);
+	Con::printf(ss.str().c_str());
+}
 ConsoleMethod(TileGrid, setWindowSize, void, 4, 4, "(F32 sizeX, [F32 sizeY]]) - Sets the number of tiles loaded into the composite sprite at one time.\n"
 																	"@param sizeX The number of tiles per row to load.\n"
 																	"@param sizeY The number of tiles per column to load.\n"
@@ -357,7 +379,7 @@ ConsoleMethod(TileGrid, updateWindowCenter, void, 2, 2, "Updates the center of t
 		object->updateWindowCenter();
 }
 
-ConsoleMethod(TileGrid, addWall, void, 8, 8, "(Console text)") {
+ConsoleMethod(TileGrid, addBorderObject, void, 10, 10, "(Console text)") {
 //const U32 x, const U32 y, TileRelativePosition positionRelativeToTile, const char* assetID, const U32 frame, const char* logicalPositionArgs
 	U32 logicalX, logicalY;
 	U32 relativePositionIn;
@@ -376,7 +398,7 @@ ConsoleMethod(TileGrid, addWall, void, 8, 8, "(Console text)") {
 	frame = dAtoi(argv[6]);
 	// LogicalX, LogicalY, RelPos, Asset, Frame, LogicalPositionArgs
 
-	object->addWall(logicalX, logicalY, relativePosition, argv[5], frame, argv[7]);
+	object->addBorderObject(logicalX, logicalY, relativePosition, argv[5], frame, argv[7], dAtob(argv[8]), dAtof(argv[9]));
 }
 
 
@@ -424,6 +446,12 @@ ConsoleMethod(TileGrid, addSprites, void, 2, 2,    "() - Adds all sprites.\n"
                                                             "@return No return value." )
 {
 	object->setDisplayed(true);
+}
+
+ConsoleMethod(TileGrid, rotateCamera, void, 3, 3, "(rotateOffset) - Rotates by a particular offset.\n"
+											"@return No return value." ) {
+	Con::printf("Trying to rotate camera");
+	object->rotateCameraRelative(dAtoi(argv[2]));
 }
 
 ConsoleMethod(TileGrid, setDefaultSpriteStride, void, 3, 4,  "(F32 strideX, [F32 strideY]]) - Sets the stride which scales the position at which sprites are created.\n"

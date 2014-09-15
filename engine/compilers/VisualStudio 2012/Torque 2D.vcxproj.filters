@@ -1326,7 +1326,7 @@
     <ClCompile Include="..\..\source\nova\tiles\TileGrid.cpp">
       <Filter>nova\tiles</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\source\nova\statics\Wall.cpp">
+    <ClCompile Include="..\..\source\nova\statics\BorderObject.cpp">
       <Filter>nova\statics</Filter>
     </ClCompile>
   </ItemGroup>
@@ -2715,7 +2715,7 @@
     <ClInclude Include="..\..\source\nova\actors\ActionPlan.h">
       <Filter>nova\actors</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\source\nova\statics\Wall.h">
+    <ClInclude Include="..\..\source\nova\statics\BorderObject.h">
       <Filter>nova\statics</Filter>
     </ClInclude>
   </ItemGroup>

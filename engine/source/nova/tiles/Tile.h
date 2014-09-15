@@ -9,42 +9,50 @@
 #include "2d/core/SpriteBatch.h"
 #include <string>
 #include <sstream>
-#include "nova/statics/Wall.h"
+#include "nova/statics/BorderObject.h"
 
 		enum TileRelativePosition {
 			TILE_UP = 0, TILE_RIGHT = 1, TILE_DOWN = 2, TILE_LEFT = 3
 		};
 
+		enum TileLockedState {
+			TILE_UNLOCKED = 0, TILE_LOCK_TEMPORARY = 1, TILE_LOCK_INDETERMINATE = 2, TILE_LOCK_WORKING = 3, TILE_LOCK_OBJECT = 4
+		};
 
-class Wall;
+
+class BorderObject;
 //bool* mMovementRestrictions;// = new bool[4]; // 0 -> y+1, 1 -> x+1, 2 -> y-1, 3 -> x-3
 class Tile : public SimObject  
     {  
     private:  
         typedef SimObject Parent;  
-		// U32 spriteID; -> currently not using because deleting and remaking them
-		// SpriteBatch::selectSpriteId( const U32 batchId )
-        // U32 spriteID;
 		U32 mSpriteID;
 		char* mTileAssetID; // void SpriteBatch::setSpriteImage( const char* pAssetId, const U32 imageFrame )
 		SpriteBatch* mBatch;
 
-		Wall* mNeighboringWalls[4];
+		
+		F32 mNeighborExtraMoveCost[4];
+		
 		// char* tileAnimationID; // SpriteBatch::setSpriteAnimation( const char* pAssetId )
 		// SpriteBatch::setSpriteLocalPosition( const Vector2& localPosition )
 		// SpriteBatch::setSpriteDepth( const F32 depth )
 		// SpriteBatch::setSpriteFlipX( const bool flipX )
 		// SpriteBatch::setSpriteFlipY( const bool flipY )
     public:  
-
+		TileLockedState mLockState;
+		bool mMovementRestrictions[4];// = new bool[4]; // 0 -> y+1, 1 -> x+1, 2 -> y-1, 3 -> x-3
+		BorderObject* mNeighboringBorderObjects[4];
+		F32 mExtraCostToNeighbor[4];
 		SpriteBatchItem::LogicalPosition* mLogicalPosition; // Was private
         U32 mFrame;
 		F32 mExtraMovementCost;
+		
 		Tile();// const SpriteBatchItem::LogicalPosition& logicalPosition);
 		void initializeTile(const char* tileAssetID, const U32 frame, const char* logicalPositionArgs, const Vector2& gridTile, const U32 logicalX, const U32 logicalY);
 		void updateTile(const char* tileAssetID, const U32 frame);
 		void spinTile();
-		void addToSpriteBatch(SpriteBatch* batch, SpriteBatch* foregroundBatch);
+		void setFrame(const U32 frame);
+		void addToSpriteBatch(SpriteBatch* batch, SpriteBatch* foregroundBatch, bool flipX, bool flipY);
 		void removeFromSpriteBatch();
 		inline TileRelativePosition GetOppositePosition(TileRelativePosition p) {
 			switch(p) {
@@ -55,19 +63,36 @@ class Tile : public SimObject
 				default: return TILE_UP;
 			}
 		}
-		void addNeighboringWall(Wall* wall, TileRelativePosition relativePosition, SpriteBatch* foregroundBatch);
+		void addNeighboringBorderObject(BorderObject* newBorder, TileRelativePosition relativePosition, SpriteBatch* foregroundBatch, bool obstructsMovement, F32 extraMoveCost);
 
-		inline void removeNeighboringWall(TileRelativePosition relativePosition) {
-			mNeighboringWalls[relativePosition] = 0;
+		inline void removeNeighboringBorderObject(TileRelativePosition relativePosition) {
+			mNeighboringBorderObjects[relativePosition] = 0;
 		}
 		
 		void updateMoveCostsAndRestrictions();
 
-		bool* mMovementRestrictions;// = new bool[4]; // 0 -> y+1, 1 -> x+1, 2 -> y-1, 3 -> x-3
+		
 
-		inline F32 actualDistance(Tile* to, F32 euclidianDistance, Tile* intermediateOne, Tile* intermediateTwo) { // Would in theory account for things like walls and etc.
+		inline void setFlip(bool flipX, bool flipY) {
+			if(mBatch == 0) return;
+			mBatch->selectSpriteId(mSpriteID);
+			mBatch->setSpriteFlipX(flipX);
+			mBatch->setSpriteFlipY(flipY);
+		}
+		inline F32 getTileExtraMoveCost(Tile* to, S32 offsetX, S32 offsetY) {
+			F32 cost = 0;
+			if(offsetX > 0) cost += std::max(mNeighborExtraMoveCost[TILE_RIGHT], to->mNeighborExtraMoveCost[TILE_LEFT]);
+			else if(offsetX < 0) cost += std::max(mNeighborExtraMoveCost[TILE_LEFT], to->mNeighborExtraMoveCost[TILE_RIGHT]);
+			
+			if(offsetY > 0) cost += std::max(mNeighborExtraMoveCost[TILE_UP], to->mNeighborExtraMoveCost[TILE_DOWN]);
+			else if(offsetY < 0) cost += std::max(mNeighborExtraMoveCost[TILE_DOWN], to->mNeighborExtraMoveCost[TILE_UP]);
+			return cost;
+		}
+		inline F32 actualDistance(Tile* to, F32 euclidianDistance) {//, Tile* intermediateOne, Tile* intermediateTwo) { // Would in theory account for things like walls and etc.
+			
 			return (F32)0.05 + euclidianDistance + to->mExtraMovementCost + 
-				(F32)((intermediateOne == 0 ? 0 : 0.5 * intermediateOne->mExtraMovementCost) + (intermediateTwo == 0 ? 0 : 0.5 * intermediateTwo->mExtraMovementCost));
+				//(F32)((intermediateOne == 0 ? 0 : 0.5 * intermediateOne->mExtraMovementCost) + (intermediateTwo == 0 ? 0 : 0.5 * intermediateTwo->mExtraMovementCost)) + 
+				getTileExtraMoveCost(to, (S32)to->mLogicalX - (S32)mLogicalX, (S32)to->mLogicalY - (S32)mLogicalY);
 		
 		}
 		inline F32 estimatedDistance(Tile* to) {

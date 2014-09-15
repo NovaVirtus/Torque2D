@@ -466,7 +466,7 @@
     <ClCompile Include="..\..\source\network\tcpObject.cc" />
     <ClCompile Include="..\..\source\network\telnetConsole.cc" />
     <ClCompile Include="..\..\source\nova\actors\Actor.cpp" />
-    <ClCompile Include="..\..\source\nova\statics\Wall.cpp" />
+    <ClCompile Include="..\..\source\nova\statics\BorderObject.cpp" />
     <ClCompile Include="..\..\source\nova\tiles\Tile.cpp" />
     <ClCompile Include="..\..\source\nova\tiles\TileGrid.cpp" />
     <ClCompile Include="..\..\source\persistence\taml\taml.cc" />
@@ -918,7 +918,7 @@
     <ClInclude Include="..\..\source\nova\actors\Actor.h" />
     <ClInclude Include="..\..\source\nova\actors\ActorArrivedEvent.h" />
     <ClInclude Include="..\..\source\nova\actors\ActorContinuedMovementCheckEvent.h" />
-    <ClInclude Include="..\..\source\nova\statics\Wall.h" />
+    <ClInclude Include="..\..\source\nova\statics\BorderObject.h" />
     <ClInclude Include="..\..\source\nova\tiles\Tile.h" />
     <ClInclude Include="..\..\source\nova\tiles\TileGrid.h" />
     <ClInclude Include="..\..\source\persistence\taml\taml.h" />

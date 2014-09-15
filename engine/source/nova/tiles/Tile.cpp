@@ -42,33 +42,43 @@ Tile::Tile() {
 	mInClosedSet = false;
 	mFrame = 0;
 	mExtraMovementCost = 1;
-	mMovementRestrictions = new bool[4];// = new bool[4]; // 0 -> y+1, 1 -> x+1, 2 -> y-1, 3 -> x-1
-	mNeighboringWalls[TILE_UP] = 0;
-	mNeighboringWalls[TILE_LEFT] = 0;
-	mNeighboringWalls[TILE_RIGHT] = 0;
-	mNeighboringWalls[TILE_DOWN] = 0;
+	//mMovementRestrictions = new bool[4];// = new bool[4]; // 0 -> y+1, 1 -> x+1, 2 -> y-1, 3 -> x-1
+	//mExtraCostToNeighbor = new F32[4];
+	mNeighboringBorderObjects[TILE_UP] = 0;
+	mNeighboringBorderObjects[TILE_LEFT] = 0;
+	mNeighboringBorderObjects[TILE_RIGHT] = 0;
+	mNeighboringBorderObjects[TILE_DOWN] = 0;
+	mMovementRestrictions[TILE_UP] = false;
+	mMovementRestrictions[TILE_LEFT] = false;
+	mMovementRestrictions[TILE_RIGHT] = false;
+	mMovementRestrictions[TILE_DOWN] = false;
+	mNeighborExtraMoveCost[TILE_UP] = 0;
+	mNeighborExtraMoveCost[TILE_LEFT] = 0;
+	mNeighborExtraMoveCost[TILE_RIGHT] = 0;
+	mNeighborExtraMoveCost[TILE_DOWN] = 0;
+	mLockState = TILE_UNLOCKED;
 	updateMoveCostsAndRestrictions();
 } 
 
 Tile::~Tile() {
 	free(mTileAssetID);
-	delete mMovementRestrictions;
+	//delete mMovementRestrictions;
 }
 
 void Tile::updateMoveCostsAndRestrictions() {
-	mExtraMovementCost = (F32)(mFrame == 2? 1 : 2);
+	//mExtraMovementCost = (F32)(mFrame == 2? 1 : 2);
 	//if(mFrame == 2) { // Empty tile
-	if(1 == 0) {
+	/*if(1 == 0) {
 		mMovementRestrictions[TILE_UP] = false;
 		mMovementRestrictions[TILE_DOWN] = false;
 		mMovementRestrictions[TILE_RIGHT] = true;
 		mMovementRestrictions[TILE_LEFT] = true; // Can only go left
 	} else { // Was all false before
-		mMovementRestrictions[TILE_UP] = (mNeighboringWalls[TILE_UP] != 0); 
-		mMovementRestrictions[TILE_DOWN] = (mNeighboringWalls[TILE_DOWN] != 0);
-		mMovementRestrictions[TILE_RIGHT] = (mNeighboringWalls[TILE_RIGHT] != 0);
-		mMovementRestrictions[TILE_LEFT] = (mNeighboringWalls[TILE_LEFT] != 0);
-	}
+		mMovementRestrictions[TILE_UP] = (mNeighboringBorderObjects[TILE_UP] != 0); 
+		mMovementRestrictions[TILE_DOWN] = (mNeighboringBorderObjects[TILE_DOWN] != 0);
+		mMovementRestrictions[TILE_RIGHT] = (mNeighboringBorderObjects[TILE_RIGHT] != 0);
+		mMovementRestrictions[TILE_LEFT] = (mNeighboringBorderObjects[TILE_LEFT] != 0);
+		}*/
 }
 
 void Tile::initializeTile(const char* tileAssetID, const U32 frame, const char* logicalPositionArgs, const Vector2& center, const U32 logicalX, const U32 logicalY) {
@@ -95,6 +105,14 @@ void Tile::updateTile(const char* tileAssetID, const U32 frame) {
 	updateMoveCostsAndRestrictions();
 }
 
+void Tile::setFrame(const U32 frame) {
+	mFrame = frame;
+	if(mBatch != 0) { 
+		mBatch->selectSpriteId(mSpriteID);
+		mBatch->setSpriteImage(mTileAssetID, mFrame);
+	}
+}
+
 void Tile::spinTile() {
 	if(mBatch == 0) return;
 	mFrame = (mFrame+1) % 4;
@@ -104,19 +122,21 @@ void Tile::spinTile() {
 	updateMoveCostsAndRestrictions();
 }
 
-void Tile::addToSpriteBatch(SpriteBatch* batch, SpriteBatch* foregroundBatch) {
+void Tile::addToSpriteBatch(SpriteBatch* batch, SpriteBatch* foregroundBatch, bool flipX, bool flipY) {
 	if(mBatch != 0) return; // Already present
 	mBatch = batch;
 	mSpriteID = mBatch->addSprite(*mLogicalPosition);
 	mBatch->setSpriteDataObject(this);
 	mBatch->setSpriteImage(mTileAssetID,mFrame);
 	mBatch->setSpriteDepth((F32)mLogicalX - (F32)mLogicalY);
-	if(mNeighboringWalls[TILE_UP] || mNeighboringWalls[TILE_DOWN] || mNeighboringWalls[TILE_LEFT] || mNeighboringWalls[TILE_RIGHT]) {
+	mBatch->setSpriteFlipX(flipX);
+	mBatch->setSpriteFlipY(flipY);
+	if(mNeighboringBorderObjects[TILE_UP] || mNeighboringBorderObjects[TILE_DOWN] || mNeighboringBorderObjects[TILE_LEFT] || mNeighboringBorderObjects[TILE_RIGHT]) {
 		Con::printf("-----Adding neighbors");
-		if(mNeighboringWalls[TILE_UP]) { mNeighboringWalls[TILE_UP]->addToBatch(foregroundBatch); Con::printf("Adding one tile to batch (up)"); }
-		if(mNeighboringWalls[TILE_DOWN]) { mNeighboringWalls[TILE_DOWN]->addToBatch(foregroundBatch); Con::printf("Adding one tile to batch (down)"); }
-		if(mNeighboringWalls[TILE_LEFT]) { mNeighboringWalls[TILE_LEFT]->addToBatch(foregroundBatch); Con::printf("Adding one tile to batch (left)"); }
-		if(mNeighboringWalls[TILE_RIGHT])  { mNeighboringWalls[TILE_RIGHT]->addToBatch(foregroundBatch); Con::printf("Adding one tile to batch (right)"); }
+		if(mNeighboringBorderObjects[TILE_UP]) { mNeighboringBorderObjects[TILE_UP]->addToBatch(foregroundBatch); Con::printf("Adding one tile to batch (up)"); }
+		if(mNeighboringBorderObjects[TILE_DOWN]) { mNeighboringBorderObjects[TILE_DOWN]->addToBatch(foregroundBatch); Con::printf("Adding one tile to batch (down)"); }
+		if(mNeighboringBorderObjects[TILE_LEFT]) { mNeighboringBorderObjects[TILE_LEFT]->addToBatch(foregroundBatch); Con::printf("Adding one tile to batch (left)"); }
+		if(mNeighboringBorderObjects[TILE_RIGHT])  { mNeighboringBorderObjects[TILE_RIGHT]->addToBatch(foregroundBatch); Con::printf("Adding one tile to batch (right)"); }
 		Con::printf("-----Added neighbors");
 	}
 }
@@ -127,10 +147,10 @@ void Tile::removeFromSpriteBatch() {
 	// but not in view if we're moving away from a tile and one of the bordering tiles comes into view.
 	// That's okay! It should be well off screen in either case, and it'll get re-added before it's important in this case.
 	// The extra checks to avoid this aren't worth the time, as a result.
-	if(mNeighboringWalls[TILE_UP]) mNeighboringWalls[TILE_UP]->removeFromBatch();
-	if(mNeighboringWalls[TILE_DOWN]) mNeighboringWalls[TILE_DOWN]->removeFromBatch();
-	if(mNeighboringWalls[TILE_LEFT]) mNeighboringWalls[TILE_LEFT]->removeFromBatch();
-	if(mNeighboringWalls[TILE_RIGHT]) mNeighboringWalls[TILE_RIGHT]->removeFromBatch();
+	if(mNeighboringBorderObjects[TILE_UP]) mNeighboringBorderObjects[TILE_UP]->removeFromBatch();
+	if(mNeighboringBorderObjects[TILE_DOWN]) mNeighboringBorderObjects[TILE_DOWN]->removeFromBatch();
+	if(mNeighboringBorderObjects[TILE_LEFT]) mNeighboringBorderObjects[TILE_LEFT]->removeFromBatch();
+	if(mNeighboringBorderObjects[TILE_RIGHT]) mNeighboringBorderObjects[TILE_RIGHT]->removeFromBatch();
 
 	mBatch->selectSpriteId(mSpriteID);
 	mBatch->removeSprite();
@@ -138,13 +158,17 @@ void Tile::removeFromSpriteBatch() {
 	mBatch = 0;
 }
   
-void Tile::addNeighboringWall(Wall* wall, TileRelativePosition relativePosition, SpriteBatch* foregroundBatch) {
+void Tile::addNeighboringBorderObject(BorderObject* newBorder, TileRelativePosition relativePosition, SpriteBatch* foregroundBatch, bool obstructsMovement, F32 extraMoveCost) {
 			// Should not need to check for existence of an existing wall here; this should be handled elsewhere if necessary
-			mNeighboringWalls[relativePosition] = wall;
+			mNeighboringBorderObjects[relativePosition] = newBorder;
 			if(mBatch != 0) { // If we're being displayed, add the wall to foreground batch
-				wall->addToBatch(foregroundBatch);
+				newBorder->addToBatch(foregroundBatch);
 			}
-			mMovementRestrictions[relativePosition] = true;
+			std::stringstream ss;
+			ss << "Adding border object to tile " << mLogicalX << "," << mLogicalY << " at position " << relativePosition << ": " << obstructsMovement << "," << extraMoveCost;
+			Con::printf(ss.str().c_str());
+			if(obstructsMovement) mMovementRestrictions[relativePosition] = true; // Doesn't necessarily clear any existing restrictions
+			mNeighborExtraMoveCost[relativePosition] += extraMoveCost;
 		}
 
 void Tile::initPersistFields() {  
