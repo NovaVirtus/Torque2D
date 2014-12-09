@@ -90,24 +90,14 @@ bool Actor::advanceSpriteMovePlan() {
 	Vector2 targetDestination;
 	targetDestination.x = (F32)mNextSpriteStep->x;
 	targetDestination.y = (F32)mNextSpriteStep->y;
-	//stringstream ss;
 	mDepth = (F32)(mNextSpriteStep->tile->mLogicalY) - (F32)(mNextSpriteStep->tile->mLogicalX);
-	
-	//mCompositeSprite->selectSpriteId(mSpriteID);
-	//mDepth = -1000;
-	// The important thing to keep in mind here is:
 	// If BATCH ISOLATION is ON, then you set the SceneLayerDepth
 	// If BATCH ISOLATION is OFF, then you set the depth for each sprite independently.
 	// Thus, we want batch isolation for these; the actor's separate sprites should stay together.
 	mCompositeSprite->setSceneLayerDepth(mDepth);
 	//mCompositeSprite->setBatchIsolated(true);
 	//mCompositeSprite->setSpriteDepth(mDepth);
-	//ss << "Setting depth to " << mNextSpriteStep->tile->mLogicalY << " - " << mNextSpriteStep->tile->mLogicalX << " = " << mCompositeSprite->getSceneLayerDepth();
-	//Con::printf(ss.str().c_str());
-	//mCompositeSprite->
-	//stringstream ss;
-	//ss << "Now moving to " << targetDestination.x << "," << targetDestination.y << " at cost " << mNextSpriteStep->tile->mExtraMovementCost << " gives speed " << speed;
-	//Con::printf(ss.str().c_str());
+	
 	U32 timeToArrive;
 	mCompositeSprite->moveTo(timeToArrive, targetDestination, speed, true, true, mTileGrid->strideYFactor());
 
@@ -254,29 +244,14 @@ bool Actor::findCrossingPoints(Point2D* currentTileCenter, const F32 strideX, co
 		if(logicalOffsetY > 0) {
 			crossingY1 += strideY;
 			crossingX2 += strideX;
-			/*crossingX1 -= (0.5 * strideX) * 0.5;
-			crossingY1 += (strideY) * 0.5;
-			
-			crossingX2 += (strideX) * 0.5;
-			crossingY2 -= (0.5 * strideY) * 0.5;*/
 		} else {
 			crossingX1 -= strideX;
 			crossingY2 -= strideY;
-			/*crossingX1 -= (strideX) * 0.5;
-			crossingY1 += (0.5 * strideY) * 0.5;
-
-			crossingX2 += (0.5 * strideX) * 0.5;
-			crossingY2 -= (strideY) * 0.5;*/
 		}
-		//ss << " | Y Compared vs. " << crossingX1 << "," << crossingY1 << "->" << crossingX2 << "," << crossingY2;
 		crossingY = FindIntersection(currentPosition->x, currentPosition->y, targetPosition->x, targetPosition->y, crossingX1, crossingY1, crossingX2, crossingY2, intersectionY);
 	} else { 
 		crossingY = false;
 	}
-	//ss << " ||";
-	//if(crossingX) ss << " Crossing X at " << intersectionX.x << "," << intersectionX.y << " |";
-	//if(crossingY) ss << " Crossing Y at " << intersectionY.x << "," << intersectionY.y << " |";
-	//Con::printf(ss.str().c_str());
 	return (crossingX || crossingY);
 }
 

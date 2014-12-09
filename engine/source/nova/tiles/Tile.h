@@ -29,17 +29,20 @@ class Tile : public SimObject
 		U32 mSpriteID;
 		char* mTileAssetID; // void SpriteBatch::setSpriteImage( const char* pAssetId, const U32 imageFrame )
 		SpriteBatch* mBatch;
-
-		
 		F32 mNeighborExtraMoveCost[4];
-		
-		// char* tileAnimationID; // SpriteBatch::setSpriteAnimation( const char* pAssetId )
-		// SpriteBatch::setSpriteLocalPosition( const Vector2& localPosition )
-		// SpriteBatch::setSpriteDepth( const F32 depth )
-		// SpriteBatch::setSpriteFlipX( const bool flipX )
-		// SpriteBatch::setSpriteFlipY( const bool flipY )
-    public:  
 		TileLockedState mLockState;
+    public:  
+		
+		inline bool lockTile(TileLockedState newState) {
+			if(mLockState != TILE_UNLOCKED) return false;
+			mLockState = newState;
+			setFrame(1);
+			return true;
+		}
+		inline void unlockTile() {
+			mLockState = TILE_UNLOCKED;
+			setFrame(2);
+		}
 		bool mMovementRestrictions[4];// = new bool[4]; // 0 -> y+1, 1 -> x+1, 2 -> y-1, 3 -> x-3
 		BorderObject* mNeighboringBorderObjects[4];
 		F32 mExtraCostToNeighbor[4];

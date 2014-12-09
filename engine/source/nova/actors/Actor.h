@@ -16,7 +16,7 @@
 #ifndef _ACTOR_H_
 #define _ACTOR_H_
 
-#define MAX_LOCKED_TILES 6
+#define MAX_MOVE_TILES 3
 
 class Actor : public SimObject  
 {
@@ -33,19 +33,18 @@ class Actor : public SimObject
       
 		CompositeSprite* mCompositeSprite;
 		
-		bool mHasTarget;
+		bool mIsMoving;
 		U32 mTargetX, mTargetY;
 
-		Tile* mLockedTiles[MAX_LOCKED_TILES];
-		U32 mNumLockedTiles;
+		Tile* mTileOccupied;
+		Tile* mMoveTiles[MAX_MOVE_TILES];
+		U32 mNumMoveTiles;
 
 		TileGrid* mTileGrid;
 		ActionPlan* mNextStep;
 		SpriteMovementPlan* mNextSpriteStep;
 		SceneWindow* mSceneWindow;
 		
-		bool advanceOverrideMoveFlag;
-
 		U32 mArrivedEventID, mContinueMoveCheckEventID;
 		U32 mLogicalX, mLogicalY;
 		U32 mSpriteID;
@@ -62,48 +61,9 @@ class Actor : public SimObject
 		bool advanceActionPlan(U32 timeUntilArrive);
 
 		bool moveToPosition(const U32 logicalX, const U32 logicalY);
+		//Move to different class?
+		//bool findCrossingPoints(Point2D* currentTileCenter, const F32 strideX, const F32 strideY, const S32 logicalOffsetX, const S32 logicalOffsetY, Point2D* currentPosition, Point2D* targetPosition, bool & crossingX, Point2D & intersectionX, bool & crossingY, Point2D & intersectionY);
 		
-		bool findCrossingPoints(Point2D* currentTileCenter, const F32 strideX, const F32 strideY, const S32 logicalOffsetX, const S32 logicalOffsetY, Point2D* currentPosition, Point2D* targetPosition, bool & crossingX, Point2D & intersectionX, bool & crossingY, Point2D & intersectionY);
-		
-		inline bool LockTile(Tile* lock, TileLockedState state) {
-			//for(int i = 0; i < MAX_NUM_TILES; i++) mLockedTiles[i] = 0;
-			//mNumLockedTiles = 0;
-			if(lock->mLockState != TILE_UNLOCKED) return false;
-			lock->mLockState = state;
-		
-			lock->setFrame(1);
-
-			mLockedTiles[mNumLockedTiles] = lock;
-			mNumLockedTiles++;
-			return true;
-		}
-		inline void UnlockTile(Tile* unlock) {
-			U32 tilePos = 0;
-			bool foundPos = false;
-			for(U32 i = 0; i < mNumLockedTiles; i++) {
-				if(mLockedTiles[i] == unlock) {
-					tilePos = i;
-					foundPos = true;
-					break;
-				}
-			}
-			if(!foundPos) return; // Never was locked..
-			U32 maxPos = (MAX_LOCKED_TILES - 1 > mNumLockedTiles ? mNumLockedTiles : MAX_LOCKED_TILES - 1);
-			for(U32 i = tilePos; i < maxPos; i++) mLockedTiles[i] = mLockedTiles[i + 1];
-			mLockedTiles[maxPos] = 0;
-			unlock->mLockState = TILE_UNLOCKED;
-			unlock->setFrame(2);
-			mNumLockedTiles--;
-		}
-
-		inline void UnlockMoveTiles(Tile* remainingLock) {
-			for(U32 i = 0; i < mNumLockedTiles; i++) {
-				if(mLockedTiles[i] != remainingLock) { mLockedTiles[i]->mLockState = TILE_UNLOCKED; mLockedTiles[i]->setFrame(2); }
-			}
-			mLockedTiles[0] = remainingLock;
-			mNumLockedTiles = 1;
-		}
-
 		inline F64 DistanceBetween(F64 x1, F64 y1, F64 x2, F64 y2) {
 			F64 x = (x1 - x2);
 			x = x * x;
@@ -135,7 +95,7 @@ class Actor : public SimObject
 			Con::printf(ss.str().c_str());
 		}*/
 
-		inline bool FindIntersection(F64 oX1, F64 oY1, F64 oX2, F64 oY2, F64 dX1, F64 dY1, F64 dX2, F64 dY2, Point2D & result) {
+		/*inline bool FindIntersection(F64 oX1, F64 oY1, F64 oX2, F64 oY2, F64 dX1, F64 dY1, F64 dX2, F64 dY2, Point2D & result) {
 			F64 epsilon = (F64)0.0001;
 			F64 d = (oX1 - oX2) * (dY1 - dY2) - (oY1 - oY2) * (dX1 - dX2);
 			F64 absD = (d >= 0? d : -d);
@@ -149,7 +109,7 @@ class Actor : public SimObject
 			result.x = x;
 			result.y = y;
 			return true;
-		}
+		}*/
 
 		inline U32 getFrameForOffset(S32 logicalOffsetX, S32 logicalOffsetY) {
 			if(logicalOffsetY < 0) {
@@ -166,7 +126,9 @@ class Actor : public SimObject
 			}
 		}
 
-		inline void recenterInCurrentTile() { moveToPosition(mLogicalX, mLogicalY); }//, mLogicalX, 1 + mTileGrid->getTile(mLogicalX, mLogicalY)->mExtraMovementCost); }
+		inline void recenterInCurrentTile() { moveToPosition(mLogicalX, mLogicalY); }
+
+		inline void unlockMoveTiles() { for(int i = 0; i < mNumMoveTiles; i++) { mMoveTiles[i]->unlockTile(); } mNumMoveTiles = 0; }
 
 		inline void popActionPlan() { ActionPlan* old = mNextStep; mNextStep = mNextStep->nextStep; delete old; }
 		inline void popSpritePlan() { SpriteMovementPlan* old = mNextSpriteStep; mNextSpriteStep = mNextSpriteStep->nextStep; delete old; }
@@ -179,27 +141,32 @@ class Actor : public SimObject
 
 		inline void cancelCurrentMove() {
 			UnlockMoveTiles(mTileGrid->getTile(mLogicalX, mLogicalY));
-			mHasTarget = false;
+			mIsMoving = false;
 			mTargetX = 0;
 			mTargetY = 0;
-			//if(mNextStep == 0) return;
-			if(mArrivedEventID != 0) cancelEvent(mArrivedEventID);
-			if(mContinueMoveCheckEventID != 0) cancelEvent(mContinueMoveCheckEventID);
-			if(mNextStep != 0) deleteActionPlan(mNextStep);
-			// Optional: recent in current tile?
+			// cancelEvent and deleteActionPlan check for null
+			cancelEvent(mArrivedEventID); 
+			cancelEvent(mContinueMoveCheckEventID);
+			deleteActionPlan(mNextStep);
+			// Optional: recenter in current tile?
 		}
-
+		/*
 		inline void updateCurrentLogicalPosition() {
 			Vector2 currentPosition = mCompositeSprite->getPosition();
 			mTileGrid->getLogicalCoordinates(currentPosition.x, currentPosition.y, mLogicalX, mLogicalY, true);
+		}*/
+		inline bool startActionPlan(ActionPlan* plan) {
+			// deleteActionPlan(mNextStep); Should never have to delete...
+			//Con::printf("Starting action plan");
+			mNextStep = plan;
+			return moveToPosition(mNextStep->x, mNextStep->y);//, nextStep->speedDivisor);
+			//debugActionPlan();
 		}
-
 		inline bool startRelativeMove(const int relativeX, const int relativeY) {
-			//if(mNextStep) return false;
 			U32 toX, toY;
 
 			if(mTileGrid->getRelativeMove(mLogicalX, mLogicalY, relativeX, relativeY, toX, toY)) {
-				if(mHasTarget && (mTargetX == toX && mTargetY == toY)) return true;
+				if(mIsMoving && (mTargetX == toX && mTargetY == toY)) return true;
 				cancelCurrentMove();
 				ActionPlan* newPlan = new ActionPlan(toX, toY);
 				if(!startActionPlan(newPlan)) {
@@ -208,7 +175,7 @@ class Actor : public SimObject
 					return false;
 				}
 				//debugActionPlan();
-				mHasTarget = true;
+				mIsMoving = true;
 				mTargetX = toX;
 				mTargetY = toY;
 				return true;
@@ -218,14 +185,8 @@ class Actor : public SimObject
 			}
 		}
 
-		inline bool moveAbsolute(const U32 toX, const U32 toY) {
-			if(mHasTarget && (mTaretX == toX && mTargetY == toY)) return true; // Don't need to make any changes, already moving here
-			advanceOverrideMoveFlag = false;
-
-		}
-
 		inline bool overrideCurrentMoveAbsolute(const U32 toX, const U32 toY) {
-			if(mHasTarget && (mTargetX == toX && mTargetY == toY)) return true; // Maybe should be false...
+			if(mIsMoving && (mTargetX == toX && mTargetY == toY)) return true; // Maybe should be false...
 			advanceOverrideMoveFlag = false;
 			updateCurrentLogicalPosition();
 			
@@ -241,7 +202,7 @@ class Actor : public SimObject
 		}
 		inline bool startAbsoluteMove(const U32 toX, const U32 toY) {
 			//Con::printf("Trying to start absolute move");
-			if(mHasTarget && (mTargetX == toX && mTargetY == toY)) return true; // Maybe should be false...
+			if(mIsMoving && (mTargetX == toX && mTargetY == toY)) return true; // Maybe should be false...
 			cancelCurrentMove();
 			ActionPlan* newPlan = mTileGrid->getPathToTarget(mLogicalX, mLogicalY, toX, toY);
 			if(!newPlan) {
@@ -249,7 +210,7 @@ class Actor : public SimObject
 			}
 			//Con::printf("Trying to start absolute move2");
 			mNextStep = newPlan;
-			mHasTarget = true;
+			mIsMoving = true;
 			mTargetX = toX;
 			mTargetY = toY;
 
@@ -288,7 +249,7 @@ class Actor : public SimObject
 			deleteActionPlan(mNextStep);
 			mLogicalX = destinationX;
 			mLogicalY = destinationY;
-			mHasTarget = false;
+			mIsMoving = false;
 			Con::executef(this, 2, "onArrived");
 			debugActionPlan();
 		}
@@ -310,14 +271,6 @@ class Actor : public SimObject
 			}
 		}
 	
-		inline bool startActionPlan(ActionPlan* plan) {
-			// deleteActionPlan(mNextStep); Should never have to delete...
-			//Con::printf("Starting action plan");
-			mNextStep = plan;
-			return moveToPosition(mNextStep->x, mNextStep->y);//, nextStep->speedDivisor);
-			//debugActionPlan();
-		}
-
 		inline void restartPathToTarget() {
 			
 			ActionPlan* current = 0;
