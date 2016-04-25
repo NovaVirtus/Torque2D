@@ -45,6 +45,42 @@ class Actor : public SimObject
 		SpriteMovementPlan* mNextSpriteStep;
 		SceneWindow* mSceneWindow;
 		
+		F32 mHP, mMaxHP, mHPRecoveryRate;
+		F32 mFood, mMaxFood, mFoodDrainRate, mStarvationRate;
+		F32 mCarriedFood;
+		F32 mCarryCap;
+		
+		inline void die() {
+			mCompositeSprite->setVisible(false);
+			mIsMoving = false;
+			mTargetX = 0;
+			mTargetY = 0;
+
+			cancelEvent(mArrivedEventID);  // cancelEvent and deleteActionPlan check for null
+			cancelEvent(mContinueMoveCheckEventID);
+			deleteActionPlan(mNextStep);
+
+			if(mTileOccupied) mTileOccupied->unlockTile();
+			unlockMoveTiles();
+			delete mNextSpriteStep;
+		}
+
+		inline bool takeDamage(F32 amount) { 
+			mHP = mHP - amount; 
+			if (mHP <= 0) { die(); return false; } 
+			return true;
+		}
+
+		inline bool updateActorTick() { // Returns false if dead
+			mFood = mFood - mFoodDrainRate; if(mFood < 0) mFood = 0;
+			if (mFood == 0) {
+				return takeDamage(mStarvationRate); 
+			} else {
+				mHP = mHP + mHPRecoveryRate; if(mHP > mMaxHP) mHP = mMaxHP;
+			}
+			return true;
+		}
+
 		U32 mArrivedEventID, mContinueMoveCheckEventID;
 		U32 mLogicalX, mLogicalY;
 		U32 mSpriteID;
@@ -62,7 +98,7 @@ class Actor : public SimObject
 
 		bool moveToPosition(const U32 logicalX, const U32 logicalY);
 		//Move to different class?
-		//bool findCrossingPoints(Point2D* currentTileCenter, const F32 strideX, const F32 strideY, const S32 logicalOffsetX, const S32 logicalOffsetY, Point2D* currentPosition, Point2D* targetPosition, bool & crossingX, Point2D & intersectionX, bool & crossingY, Point2D & intersectionY);
+		bool findCrossingPoints(Point2D* currentTileCenter, const F32 strideX, const F32 strideY, const S32 logicalOffsetX, const S32 logicalOffsetY, Point2D* currentPosition, Point2D* targetPosition, bool & crossingX, Point2D & intersectionX, bool & crossingY, Point2D & intersectionY);
 		
 		inline F64 DistanceBetween(F64 x1, F64 y1, F64 x2, F64 y2) {
 			F64 x = (x1 - x2);
@@ -95,7 +131,7 @@ class Actor : public SimObject
 			Con::printf(ss.str().c_str());
 		}*/
 
-		/*inline bool FindIntersection(F64 oX1, F64 oY1, F64 oX2, F64 oY2, F64 dX1, F64 dY1, F64 dX2, F64 dY2, Point2D & result) {
+		inline bool FindIntersection(F64 oX1, F64 oY1, F64 oX2, F64 oY2, F64 dX1, F64 dY1, F64 dX2, F64 dY2, Point2D & result) {
 			F64 epsilon = (F64)0.0001;
 			F64 d = (oX1 - oX2) * (dY1 - dY2) - (oY1 - oY2) * (dX1 - dX2);
 			F64 absD = (d >= 0? d : -d);
@@ -109,7 +145,7 @@ class Actor : public SimObject
 			result.x = x;
 			result.y = y;
 			return true;
-		}*/
+		}
 
 		inline U32 getFrameForOffset(S32 logicalOffsetX, S32 logicalOffsetY) {
 			if(logicalOffsetY < 0) {
@@ -128,7 +164,7 @@ class Actor : public SimObject
 
 		inline void recenterInCurrentTile() { moveToPosition(mLogicalX, mLogicalY); }
 
-		inline void unlockMoveTiles() { for(int i = 0; i < mNumMoveTiles; i++) { mMoveTiles[i]->unlockTile(); } mNumMoveTiles = 0; }
+		inline void unlockMoveTiles() { for(U32 i = 0; i < mNumMoveTiles; i++) { mMoveTiles[i]->unlockTile(); } mNumMoveTiles = 0; }
 
 		inline void popActionPlan() { ActionPlan* old = mNextStep; mNextStep = mNextStep->nextStep; delete old; }
 		inline void popSpritePlan() { SpriteMovementPlan* old = mNextSpriteStep; mNextSpriteStep = mNextSpriteStep->nextStep; delete old; }
@@ -140,7 +176,7 @@ class Actor : public SimObject
 		}
 
 		inline void cancelCurrentMove() {
-			UnlockMoveTiles(mTileGrid->getTile(mLogicalX, mLogicalY));
+			unlockMoveTiles(); //mTileGrid->getTile(mLogicalX, mLogicalY)
 			mIsMoving = false;
 			mTargetX = 0;
 			mTargetY = 0;
@@ -150,11 +186,14 @@ class Actor : public SimObject
 			deleteActionPlan(mNextStep);
 			// Optional: recenter in current tile?
 		}
-		/*
+		
 		inline void updateCurrentLogicalPosition() {
 			Vector2 currentPosition = mCompositeSprite->getPosition();
 			mTileGrid->getLogicalCoordinates(currentPosition.x, currentPosition.y, mLogicalX, mLogicalY, true);
-		}*/
+			if(mTileOccupied) mTileOccupied->unlockTile();
+			mTileOccupied = mTileGrid->getTile(mLogicalX, mLogicalY);
+			mTileOccupied->changeLockedStatus(TILE_LOCK_INDETERMINATE);
+		}
 		inline bool startActionPlan(ActionPlan* plan) {
 			// deleteActionPlan(mNextStep); Should never have to delete...
 			//Con::printf("Starting action plan");
@@ -187,7 +226,6 @@ class Actor : public SimObject
 
 		inline bool overrideCurrentMoveAbsolute(const U32 toX, const U32 toY) {
 			if(mIsMoving && (mTargetX == toX && mTargetY == toY)) return true; // Maybe should be false...
-			advanceOverrideMoveFlag = false;
 			updateCurrentLogicalPosition();
 			
 			//cancelCurrentMove();
@@ -229,7 +267,6 @@ class Actor : public SimObject
 		}
 
 		inline bool overrideCurrentMoveRelative(int relativeX, int relativeY) {
-			advanceOverrideMoveFlag = false;
 			updateCurrentLogicalPosition();
 			//cancelCurrentMove();
 			// Pass in 0,0 -> "stop"
@@ -250,6 +287,9 @@ class Actor : public SimObject
 			mLogicalX = destinationX;
 			mLogicalY = destinationY;
 			mIsMoving = false;
+			if(mTileOccupied) mTileOccupied->unlockTile();
+			mTileOccupied = mTileGrid->getTile(mLogicalX, mLogicalY);
+			mTileOccupied->changeLockedStatus(TILE_LOCK_INDETERMINATE);
 			Con::executef(this, 2, "onArrived");
 			debugActionPlan();
 		}
