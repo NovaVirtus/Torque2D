@@ -32,7 +32,8 @@ class Tile : public SimObject
 		F32 mNeighborExtraMoveCost[4];
 		TileLockedState mLockState;
     public:  
-		
+		inline void changeLockedStatus(TileLockedState newState) {  mLockState = newState; } // Only if the tile is already locked by this actor
+
 		inline bool lockTile(TileLockedState newState) {
 			if(mLockState != TILE_UNLOCKED) return false;
 			mLockState = newState;

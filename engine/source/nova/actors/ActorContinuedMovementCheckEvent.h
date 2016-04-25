@@ -45,7 +45,8 @@ public:
     virtual void process(SimObject *object) {
 		Actor* curActor = (Actor*) object;
 		//Con::printf("Continued movement check fired");
-		curActor->advanceActionPlan(mTimeUntilArrive);
+		curActor->advanceActionPlan(mTimeUntilArrive); // <- Temporarily commented out for debugging
+
 		/*
 		if(!(curActor->advanceActionPlan(mLogicalX, mLogicalY, mTimeUntilArrive))) {
 			curActor->setArrivingIn(mLogicalX, mLogicalY, mTimeUntilArrive);

@@ -53,19 +53,21 @@ Actor::Actor() {
 	mNextSpriteStep = 0;
 	mFrame = 0;
 	mDepth = 0;
-	advanceOverrideMoveFlag = false;
 	mBorderObjectBeingPassedThrough = 0;
-
-	for(int i = 0; i < MAX_LOCKED_TILES; i++) mLockedTiles[i] = 0;
-	mNumLockedTiles = 0;
+	mCompositeSprite = 0;
+	mSceneWindow = 0;
+	mTileOccupied = 0;
+	for(int i = 0; i < MAX_MOVE_TILES; i++) mMoveTiles[i] = 0;
+	mNumMoveTiles = 0;
 
 }
 Actor::~Actor() {
-
+	die();
+	if (mCompositeSprite != 0) delete mCompositeSprite;
 }
 void Actor::setSprite(const char* assetID, const U32 frame, const F32 sizeX, const F32 sizeY) {
 
-	if(mSpriteID) {
+	if(mSpriteID) { // If a sprite exists, remove it first
 		mCompositeSprite->selectSpriteId(mSpriteID);
 		mCompositeSprite->removeSprite();
 	}
@@ -83,10 +85,15 @@ void Actor::setSprite(const char* assetID, const U32 frame, const F32 sizeX, con
 }
 
 bool Actor::advanceSpriteMovePlan() {
+	Con::printf("Advance sprite move plan");
+	Con::errorf("ASMP Err");
 	mCompositeSprite->cancelMoveTo();
+	Con::printf("Advance sprite move plan2");
+	Con::errorf("ASMP Err2");
 	if(!mNextSpriteStep) return false;
-
+	Con::errorf("ASMP Err3");
 	F32 speed = mSpeed / (mNextSpriteStep->tile->mExtraMovementCost);
+	Con::errorf("ASMP Err4");
 	Vector2 targetDestination;
 	targetDestination.x = (F32)mNextSpriteStep->x;
 	targetDestination.y = (F32)mNextSpriteStep->y;
@@ -102,7 +109,7 @@ bool Actor::advanceSpriteMovePlan() {
 	mCompositeSprite->moveTo(timeToArrive, targetDestination, speed, true, true, mTileGrid->strideYFactor());
 
 	//mTileGrid->spinTile(mNextSpriteStep->tile->mLogicalX, mNextSpriteStep->tile->mLogicalY);
-
+	Con::errorf("ASMP Err4.5");
 	//const F32 dist = mCompositeSprite->getLinearVelocity().Normalize(speed);
 	//U32 totalMoveTime = (U32)((dist / speed) * 1000.0f);
 	cancelEvent(mArrivedEventID);
@@ -110,16 +117,18 @@ bool Actor::advanceSpriteMovePlan() {
 
 	U32 currentTime = Sim::getCurrentTime();
 	U32 continuedMovementTime; //= totalMoveTime;
-	
+	Con::errorf("ASMP Err4.75");
 	if(TIME_BEFORE_ARRIVE_TO_CHECK_MOVEMENT + MINIMUM_ARRIVAL_TIME > timeToArrive) {
 		continuedMovementTime = TIME_BEFORE_ARRIVE_TO_CHECK_MOVEMENT; // It always takes at least (a very short time) to arrive in a new square
 		timeToArrive = continuedMovementTime + MINIMUM_ARRIVAL_TIME;
 	} else {
 		continuedMovementTime = (timeToArrive - TIME_BEFORE_ARRIVE_TO_CHECK_MOVEMENT);
 	}
-
+	Con::errorf("ASMP Err4.9");
+	Con::errorf("ASMP Err5");
 	popSpritePlan();
-
+	Con::errorf("ASMP Err6");
+	Con::errorf("ASMP Err Clear");
 	ActorContinuedMovementCheckEvent* pMoveEvent = new ActorContinuedMovementCheckEvent(timeToArrive - continuedMovementTime); //logicalX, logicalY,totalMoveTime - continuedMovementTime); //(totalMoveTime - continuedMovementTime));
 	mContinueMoveCheckEventID = Sim::postEvent(this, pMoveEvent, Sim::getCurrentTime() + continuedMovementTime);
 	//Con::printf("Continued movement check scheduled");
@@ -127,24 +136,22 @@ bool Actor::advanceSpriteMovePlan() {
 }
 
 bool Actor::advanceActionPlan(U32 timeUntilArrive) {
+	Con::printf("Advance act plan");
 	if(advanceSpriteMovePlan()) return true; // Try to advance sprite movement first, if possible
-
+	Con::printf("Advance act plan2");
+	Con::printf("Advance act plan3");
 	if(mBorderObjectBeingPassedThrough != 0) {
 		mBorderObjectBeingPassedThrough->endActorPassthrough(this);
 		mBorderObjectBeingPassedThrough = 0;
 	}
-
+	Con::printf("Advance act plan3");
 	if(mNextStep == 0) { // If no more steps, check whether any more moves are required
 		Con::executef(this, 2, "checkContinuedMovement"); // May need to do some special handling here...
 		return (mNextStep != 0);
 	}
-	advanceOverrideMoveFlag = true;
+	Con::printf("Advance act plan4");
 	Con::executef(this, 2, "checkContinuedMovement");
 
-	if(!advanceOverrideMoveFlag) {
-		//Con::printf("Bailing out of advanceactionplan because of changes from checkcontinuedmovement");
-		return false; // If the flag is cleared, we're moving somewhere completely different - and that code path resolved starting the move
-	}
 	// Return true if we're done with plan after this step
 	if(mNextStep == 0) return true;
 		
@@ -164,8 +171,8 @@ bool Actor::advanceActionPlan(U32 timeUntilArrive) {
 		TileLockedState nextState;
 		if(mNextStep->nextStep != 0) nextState = TILE_LOCK_TEMPORARY;
 		else nextState = TILE_LOCK_INDETERMINATE; // This could also be "working" if we're going to a workstation, etc.
-
-		if(nextTile->mLockState != TILE_UNLOCKED) restartPathToTarget();
+		
+		// if(nextTile->mLockState != TILE_UNLOCKED) restartPathToTarget(); This is handled in moveToPosition now
 
 		//if(!LockTile(nextTile, nextState)) restartPathToTarget(); We lock this in moveToPosition
 
@@ -177,6 +184,7 @@ bool Actor::advanceActionPlan(U32 timeUntilArrive) {
 
 			//nextTile->mLockState = TILE_LO
 		}
+		Con::printf("Advance act plan5");
 		return false;
 	} else {
 		// Cancel any previous arrived event
@@ -186,12 +194,12 @@ bool Actor::advanceActionPlan(U32 timeUntilArrive) {
 		mArrivedEventID = Sim::postEvent(this, newEvent, Sim::getCurrentTime() + timeUntilArrive);
 		//Con::printf("Arrived event scheduled");
 		
-		UnlockMoveTiles(mTileGrid->getTile(mLogicalX, mLogicalY)); // Unlocks all but the last tile
-
+		unlockMoveTiles(); 
+		Con::printf("Advance act plan6");
 		return true;
 	}
 }
-
+// needed to set up the intermediate sprite movement plans (move to edge of next square so can adjust speed upon entering, etc.)
 bool Actor::findCrossingPoints(Point2D* currentTileCenter, const F32 strideX, const F32 strideY, const S32 logicalOffsetX, const S32 logicalOffsetY, Point2D* currentPosition, Point2D* targetPosition, bool & crossingX, Point2D & intersectionX, bool & crossingY, Point2D & intersectionY) {
 	if(logicalOffsetX == 0 && logicalOffsetY == 0) {
 		crossingX = false;
@@ -218,8 +226,8 @@ bool Actor::findCrossingPoints(Point2D* currentTileCenter, const F32 strideX, co
 			crossingY1 -= (strideY) * 0.5;
 			// Top-right corner: Add strideX + 1/2 stride Y
 			crossingX2 += (strideX) * 0.5;
-			crossingY2 += (0.5 * strideY) * 0.5;*/
-			//crossingX = FindIntersection(currentPosition->x, currentPosition->y, targetPosition->x, targetPosition->y, crossX1.x, crossX1.y, crossX2.x, crossX2.y, intersectionX);
+			crossingY2 += (0.5 * strideY) * 0.5;
+			//crossingX = FindIntersection(currentPosition->x, currentPosition->y, targetPosition->x, targetPosition->y, crossX1.x, crossX1.y, crossX2.x, crossX2.y, intersectionX);*/
 		} else if(logicalOffsetX < 0) {
 			crossingX2 -= strideX;
 			crossingY1 += strideY;
@@ -256,6 +264,7 @@ bool Actor::findCrossingPoints(Point2D* currentTileCenter, const F32 strideX, co
 }
 
 bool Actor::moveToPosition(const U32 logicalX, const U32 logicalY) {
+	Con::printf("move to position");
 	F32 strideX = mTileGrid->mStrideX;
 	F32 strideY = mTileGrid->mStrideY;
 	Tile* currentTile = mTileGrid->getTile(mLogicalX, mLogicalY);
@@ -266,12 +275,12 @@ bool Actor::moveToPosition(const U32 logicalX, const U32 logicalY) {
 	}
 	
 	Tile* targetTile = mTileGrid->getTile(logicalX,logicalY);
-	if(targetTile->mLockState != TILE_UNLOCKED && (targetTile != currentTile)) { cancelCurrentMove(); return false; }
+	// Probably shouldn't be checking this? if(targetTile->mLockState != TILE_UNLOCKED && (targetTile != currentTile)) { cancelCurrentMove(); return false; }
 	if(!(mTileGrid->canMoveBetweenTiles(currentTile, targetTile))) { cancelCurrentMove(); return false; }
 	// Right now for simplicity's sake, update the logical position as soon as possible. 
 	// But in practice, we'll want to update it over time - probably via calculating the time to enter the next square and setting up an event
 	// Sanity check
-	UnlockMoveTiles(currentTile);
+	unlockMoveTiles();
 
 	Point2D* targetPosition = targetTile->mCenter;
 	Vector2* curSpriteVector = &(mCompositeSprite->getPosition());
@@ -295,24 +304,27 @@ bool Actor::moveToPosition(const U32 logicalX, const U32 logicalY) {
 	bool crossingY = false;
 	
 	mNextSpriteStep = new SpriteMovementPlan(targetPosition->x, targetPosition->y, targetTile);
+	if (!targetTile->lockTile(TILE_LOCK_TEMPORARY)) { cancelCurrentMove(); return false; }
+
 	SpriteMovementPlan* lastStep = mNextSpriteStep;
 	Tile* intermediateTileOne = 0;
 	Tile* intermediateTileTwo = 0;
-	
+
 	if(offsetX != 0 && offsetY != 0) {
 		U32 tempLogicalX, tempLogicalY;
 		tempLogicalX = (mLogicalX + (offsetX > 0 ? 1 : -1));
 		tempLogicalY = (mLogicalY + (offsetY > 0 ? 1 : -1));
 		intermediateTileOne = mTileGrid->getTile(tempLogicalX, mLogicalY);
+		if(!(intermediateTileOne->lockTile(TILE_LOCK_TEMPORARY))) { cancelCurrentMove(); return false; }
 		intermediateTileTwo = mTileGrid->getTile(mLogicalX, tempLogicalY);
-		if(intermediateTileOne->mLockState != TILE_UNLOCKED) { cancelCurrentMove(); return false; }
-		if(intermediateTileTwo->mLockState != TILE_UNLOCKED) { cancelCurrentMove(); return false; }
+		if(!(intermediateTileTwo->lockTile(TILE_LOCK_TEMPORARY))) { cancelCurrentMove(); return false; }
+		//if(intermediateTileOne->mLockState != TILE_UNLOCKED) { cancelCurrentMove(); return false; }
+		//if(intermediateTileTwo->mLockState != TILE_UNLOCKED) { cancelCurrentMove(); return false; }
 		
-		LockTile(intermediateTileOne, TILE_LOCK_TEMPORARY);
-		LockTile(intermediateTileTwo, TILE_LOCK_TEMPORARY);
+		//LockTile(intermediateTileOne, TILE_LOCK_TEMPORARY);
+		//LockTile(intermediateTileTwo, TILE_LOCK_TEMPORARY);
 	}
-	LockTile(targetTile, TILE_LOCK_TEMPORARY); // Need to check if is last planned move..
-	
+
 	if(findCrossingPoints(currentTileCenter, strideX, strideY, offsetX, offsetY, currentPosition, targetPosition, crossingX, intersectionX, crossingY, intersectionY)) {
 		if(crossingX && crossingY) {
 			if(DistanceBetween(intersectionX.x, intersectionX.y, intersectionY.x, intersectionY.y) < POINT_DISTANCE_MAXIMUM_COLLAPSE) { // Check if x and y are crossed at very near same time and if so, collapse
@@ -360,6 +372,9 @@ void Actor::addToWindow(const U32 logicalX, const U32 logicalY) {
 	mLogicalY = logicalY;
 	
 	Tile* t = mTileGrid->getTile(logicalX,logicalY);
+	mTileOccupied = t;
+	mTileOccupied->changeLockedStatus(TILE_LOCK_INDETERMINATE);
+
 	Point2D* position = t->mCenter;
 	Vector2 vPosition;
 	vPosition.x = (F32)position->x;
@@ -379,6 +394,16 @@ void Actor::initPersistFields() {
 	addField("SceneWindow",TypeSimObjectPtr, Offset(mSceneWindow, Actor), "SceneWindow to use for this Actor.");
 	addField("CompositeSprite",TypeSimObjectPtr, Offset(mCompositeSprite, Actor), "Composite sprite to use for this Actor.");
 	addField("Speed",TypeF32, Offset(mSpeed, Actor), "Speed of this Actor.");
+
+	addField("HP",TypeF32, Offset(mHP, Actor), "Current health of this Actor.");
+	addField("MaxHP",TypeF32, Offset(mMaxHP, Actor), "Current max health of this Actor.");
+	addField("RecoveryRate",TypeF32, Offset(mHPRecoveryRate, Actor), "Current health recovery rate of this Actor.");
+	addField("Food",TypeF32, Offset(mFood, Actor), "Current food (satiation) of this Actor.");
+	addField("MaxFood",TypeF32, Offset(mMaxFood, Actor), "Current max food (satiation) of this Actor.");
+	addField("FoodDrainRate",TypeF32, Offset(mFoodDrainRate, Actor), "Current food drain (per tick) of this Actor.");
+	addField("CarriedFood",TypeF32, Offset(mCarriedFood, Actor), "Current food carried by this Actor.");
+	addField("CarryCap",TypeF32, Offset(mCarryCap, Actor), "Maximum amount that this Actor can carry at one time.");
+	addField("StarvationRate",TypeF32, Offset(mStarvationRate, Actor), "Amount of damage this Actor takes per tick of starvation.");
     // Add my fields here.  
    //addField("EmitLight", TypeBool, Offset(mEmitLight, TileGrid), "Flags whether the light is on or off.");  
     //addField("Brightness", TypeF32, Offset(mBrightness, TileGrid), "Sets the brightness of the light.");   

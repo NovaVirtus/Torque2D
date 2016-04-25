@@ -1329,6 +1329,9 @@
     <ClCompile Include="..\..\source\nova\statics\BorderObject.cpp">
       <Filter>nova\statics</Filter>
     </ClCompile>
+    <ClCompile Include="ActorSet.cpp">
+      <Filter>nova\actors</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\..\source\audio\audio.h">
@@ -2717,6 +2720,9 @@
     </ClInclude>
     <ClInclude Include="..\..\source\nova\statics\BorderObject.h">
       <Filter>nova\statics</Filter>
+    </ClInclude>
+    <ClInclude Include="ActorSet.h">
+      <Filter>nova\actors</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
